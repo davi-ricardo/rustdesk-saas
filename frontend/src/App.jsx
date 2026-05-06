@@ -6,6 +6,7 @@ function App() {
   const [password, setPassword] = useState('')
   const [token, setToken] = useState(localStorage.getItem('token'))
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const [serverInfo, setServerInfo] = useState(null)
   const [devices, setDevices] = useState([])
   const [reports, setReports] = useState([])
@@ -64,12 +65,19 @@ function App() {
   const handleLogin = async (e) => {
     e.preventDefault()
     setError('')
+    setLoading(true)
     try {
+      console.log('Tentando login com:', email)
       const response = await api.post('/api/auth/login', { email, password })
       const { token: newToken } = response.data
       localStorage.setItem('token', newToken)
       setToken(newToken)
-    } catch (err) { setError('Credenciais inválidas ou erro no servidor') }
+    } catch (err) {
+      console.error('Erro no login:', err)
+      setError(err.response?.data?.error || 'Erro de conexão com o servidor')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleLogout = () => {
@@ -280,7 +288,17 @@ function App() {
           required
         />
         <input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} style={{ padding: '12px', borderRadius: '4px', border: '1px solid #ccc' }} required />
-        <button type="submit" style={{ padding: '12px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Entrar</button>
+        <button type="submit" disabled={loading} style={{ 
+          padding: '12px', 
+          background: loading ? '#ccc' : '#007bff', 
+          color: 'white', 
+          border: 'none', 
+          borderRadius: '4px', 
+          fontWeight: 'bold',
+          cursor: loading ? 'not-allowed' : 'pointer'
+        }}>
+          {loading ? 'Carregando...' : 'Entrar'}
+        </button>
       </form>
       {error && <p style={{ color: 'red', marginTop: '15px' }}>{error}</p>}
     </div>
