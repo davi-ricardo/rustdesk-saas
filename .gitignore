@@ -1,0 +1,24 @@
+# Dependências
+node_modules/
+api/node_modules/
+frontend/node_modules/
+
+# Build e arquivos gerados
+dist/
+frontend/dist/
+*.log
+
+# Dados do Docker (IMPORTANTE: não subir o banco de dados)
+pgdata/
+data/
+
+# Variáveis de ambiente
+.env
+api/.env
+frontend/.env
+
+# IDE e Sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
