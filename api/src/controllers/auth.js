@@ -2,10 +2,14 @@ const jwt = require("jsonwebtoken");
 const db = require("../db");
 
 exports.login = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password } = req.body; // 'email' aqui é o que vem do campo de texto (pode ser username)
 
   try {
-    const result = await db.query("SELECT * FROM users WHERE email = $1", [email]);
+    // Busca o usuário pelo email OU pelo username
+    const result = await db.query(
+      "SELECT * FROM users WHERE email = $1 OR username = $1", 
+      [email]
+    );
     const user = result.rows[0];
 
     if (user && user.password === password) {

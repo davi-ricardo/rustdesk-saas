@@ -209,7 +209,7 @@ function App() {
               <div style={{ background: '#f8f9fa', padding: '20px', borderRadius: '8px', border: '1px solid #dee2e6' }}>
                 <h3 style={{ marginTop: 0 }}>Novo Usuário</h3>
                 <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <input type="email" value={newUserEmail} onChange={(e) => setNewUserEmail(e.target.value)} placeholder="E-mail" style={{ padding: '8px' }} required />
+                  <input type="text" value={newUserEmail} onChange={(e) => setNewUserEmail(e.target.value)} placeholder="Usuário ou E-mail" style={{ padding: '8px' }} required />
                   <input type="password" value={newUserPass} onChange={(e) => setNewUserPass(e.target.value)} placeholder="Senha" style={{ padding: '8px' }} required />
                   <select value={newUserRole} onChange={(e) => setNewUserRole(e.target.value)} style={{ padding: '8px' }}>
                     <option value="user">Usuário (Técnico)</option>
@@ -271,7 +271,14 @@ function App() {
     <div style={{ padding: '50px', maxWidth: '400px', margin: '0 auto', textAlign: 'center', fontFamily: 'sans-serif' }}>
       <h1 style={{ color: '#007bff' }}>RustDesk SaaS</h1>
       <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <input type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} style={{ padding: '12px', borderRadius: '4px', border: '1px solid #ccc' }} required />
+        <input
+          type="text"
+          placeholder="Usuário ou E-mail"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={{ padding: '12px', borderRadius: '4px', border: '1px solid #ccc' }}
+          required
+        />
         <input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} style={{ padding: '12px', borderRadius: '4px', border: '1px solid #ccc' }} required />
         <button type="submit" style={{ padding: '12px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Entrar</button>
       </form>

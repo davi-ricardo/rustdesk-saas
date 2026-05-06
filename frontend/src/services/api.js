@@ -1,7 +1,11 @@
 import axios from "axios";
 
+// No frontend rodando em produção (VPS), precisamos que ele aponte para o IP da VPS
+// Se estivermos em localhost, ele usa localhost.
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "http://localhost:3000"
+  baseURL: window.location.hostname === 'localhost' 
+    ? "http://localhost:3000" 
+    : `http://${window.location.hostname}:3000`
 });
 
 api.interceptors.request.use(config => {

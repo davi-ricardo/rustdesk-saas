@@ -41,7 +41,7 @@ services:
       ID_SERVER: "76.13.174.204"
       RELAY_SERVER: "76.13.174.204"
       RUSTDESK_KEY: "FiClwwg0SMw4aI3SAD1kyfzZFTWjb5nmD50q"
-      ADMIN_EMAIL: "administrador@ti"
+      ADMIN_EMAIL: "administrador"
       ADMIN_PASSWORD: "tipref#2026"
     ports:
       - "3000:3000"

@@ -8,7 +8,12 @@ const userRoutes = require("./routes/users");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+// Configuração detalhada do CORS
+app.use(cors({
+  origin: "*", // Em produção você pode restringir ao IP/Domínio do seu frontend
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.use(express.json());
 
 // Routes
@@ -20,10 +25,11 @@ app.use("/api/users", userRoutes);
 const db = require("./db");
 const initDb = async () => {
   try {
-    // Cria ou atualiza a tabela de usuários com a coluna role
+    // Cria ou atualiza a tabela de usuários com a coluna role e username
     await db.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
+        username VARCHAR(50) UNIQUE,
         email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
         role VARCHAR(20) DEFAULT 'user',
@@ -31,23 +37,28 @@ const initDb = async () => {
       );
     `);
 
-    // Tenta adicionar a coluna role se ela não existir (para migração de quem já tem o banco)
+    // Migração: Adiciona colunas se não existirem
     try {
       await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'user'");
+      await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(50) UNIQUE");
     } catch (e) {}
     
     // Cria ou atualiza o administrador baseado nas variáveis de ambiente
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@test.com';
     const adminPassword = process.env.ADMIN_PASSWORD || '123';
     
-    const result = await db.query("SELECT * FROM users WHERE email = $1", [adminEmail]);
-    if (result.rows.length === 0) {
-      await db.query("INSERT INTO users (email, password, role) VALUES ($1, $2, 'admin')", [adminEmail, adminPassword]);
-      console.log(`Default admin user created: ${adminEmail}`);
-    } else {
-      await db.query("UPDATE users SET password = $1, role = 'admin' WHERE email = $2", [adminPassword, adminEmail]);
-      console.log(`Admin credentials updated for: ${adminEmail}`);
-    }
+    // Forçar a criação/atualização do administrador sem depender de busca por email
+    // Isso garante que se você mudar o email no docker-compose, o sistema se ajuste
+    await db.query(`
+      INSERT INTO users (username, email, password, role) 
+      VALUES ('administrador', $1, $2, 'admin')
+      ON CONFLICT (username) DO UPDATE SET
+        email = EXCLUDED.email,
+        password = EXCLUDED.password,
+        role = 'admin'
+    `, [adminEmail, adminPassword]);
+    
+    console.log(`Admin user 'administrador' synchronized (${adminEmail})`);
 
     // Cria tabela de dispositivos (devices)
     await db.query(`
