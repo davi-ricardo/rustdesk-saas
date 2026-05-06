@@ -28,22 +28,60 @@ Antes de começar, você precisará ter instalado em sua máquina:
 
 ## ⚙️ Configuração e Instalação
 
+### 💻 Local (Desenvolvimento)
 1. **Clone o repositório:**
    ```bash
    git clone https://github.com/davi-ricardo/rustdesk-saas.git
    cd rustdesk-saas
    ```
 
-2. **Configuração de Variáveis de Ambiente:**
-   No arquivo `docker-compose.yml`, ajuste as variáveis da seção `api` para apontar para o seu servidor RustDesk (se já tiver um rodando em VPS):
-   - `ID_SERVER`: IP da sua VPS.
-   - `RELAY_SERVER`: IP da sua VPS.
-   - `RUSTDESK_KEY`: A chave pública (`.pub`) do seu servidor RustDesk.
+2. **Ajuste o `docker-compose.yml`:**
+   Configure seu IP da VPS e a Key pública.
 
 3. **Suba os containers:**
    ```bash
    docker-compose up -d --build
    ```
+
+### ☁️ Produção (VPS)
+Este projeto foi desenhado para ser facilmente implantado em uma VPS (ex: Ubuntu 22.04).
+
+1. **Acesse sua VPS via SSH:**
+   ```bash
+   ssh root@seu-ip-vps
+   ```
+
+2. **Instale as dependências (se necessário):**
+   Garanta que o `git`, `docker` e `docker-compose` estejam instalados.
+
+3. **Clone o projeto na VPS:**
+   ```bash
+   cd /opt
+   git clone https://github.com/davi-ricardo/rustdesk-saas.git
+   cd rustdesk-saas
+   ```
+
+4. **Configuração de Firewall:**
+   É essencial liberar as seguintes portas para o funcionamento pleno:
+   - **8080 (TCP)**: Painel Web (Frontend).
+   - **3000 (TCP)**: API e Sincronização de Clients.
+   - **21115-21119 (TCP/UDP)**: Protocolos nativos do RustDesk (HBBS/HBBR).
+
+   *Comando rápido (UFW):* `ufw allow 8080,3000,21115:21119/tcp && ufw allow 21116/udp`
+
+5. **Deploy:**
+   ```bash
+   docker-compose up -d --build
+   ```
+
+## 🔐 Segurança e Acesso
+
+O painel utiliza um sistema de login administrativo. Você pode personalizar as credenciais diretamente no `docker-compose.yml` na seção `environment` da `api`:
+
+- `ADMIN_EMAIL`: Seu e-mail ou nome de usuário (ex: `administrador`).
+- `ADMIN_PASSWORD`: Sua senha segura.
+
+> **Nota:** O sistema aceita login tanto pelo e-mail quanto pelo nome de usuário configurado. Sempre que alterar esses valores no arquivo e reiniciar o container, as credenciais serão sincronizadas automaticamente com o banco de dados.
 
 ## 🖥️ Como Acessar
 
