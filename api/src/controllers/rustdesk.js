@@ -58,14 +58,96 @@ exports.heartbeat = async (req, res) => {
 exports.getDevices = async (req, res) => {
   try {
     const result = await db.query(`
-      SELECT *, 
-      CASE WHEN last_seen > NOW() - INTERVAL '5 minutes' THEN true ELSE false END as is_online
-      FROM devices 
-      ORDER BY last_seen DESC
+      SELECT d.*, ab.alias, ab.tags,
+      CASE WHEN d.last_seen > NOW() - INTERVAL '5 minutes' THEN true ELSE false END as is_online
+      FROM devices d
+      LEFT JOIN address_book ab ON d.device_id = ab.device_id
+      ORDER BY d.last_seen DESC
     `);
     res.json(result.rows);
   } catch (err) {
     console.error("Error fetching devices:", err);
     res.status(500).json({ error: "Failed to fetch devices" });
+  }
+};
+
+// Address Book - Salvar ou atualizar apelido
+exports.saveAlias = async (req, res) => {
+  const { device_id, alias, tags } = req.body;
+  if (!device_id) return res.status(400).json({ error: "Missing device_id" });
+
+  try {
+    await db.query(`
+      INSERT INTO address_book (device_id, alias, tags)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (device_id) DO UPDATE SET
+        alias = EXCLUDED.alias,
+        tags = EXCLUDED.tags
+    `, [device_id, alias, tags]);
+    res.json({ status: "ok" });
+  } catch (err) {
+    console.error("Error saving alias:", err);
+    res.status(500).json({ error: "Failed to save alias" });
+  }
+};
+
+// Connection Logs - Capturar eventos
+exports.logConnection = async (req, res) => {
+  const { from_device_id, to_device_id, action, duration } = req.body;
+  
+  try {
+    await db.query(`
+      INSERT INTO connection_logs (from_device_id, to_device_id, action, duration)
+      VALUES ($1, $2, $3, $4)
+    `, [from_device_id, to_device_id, action, duration || 0]);
+    res.json({ status: "ok" });
+  } catch (err) {
+    console.error("Error logging connection:", err);
+    res.status(500).json({ error: "Failed to log connection" });
+  }
+};
+
+// Relatórios de Conexão - Listar
+exports.getReports = async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT cl.*, 
+             f.alias as from_alias, 
+             t.alias as to_alias
+      FROM connection_logs cl
+      LEFT JOIN address_book f ON cl.from_device_id = f.device_id
+      LEFT JOIN address_book t ON cl.to_device_id = t.device_id
+      ORDER BY cl.timestamp DESC
+      LIMIT 100
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching reports:", err);
+    res.status(500).json({ error: "Failed to fetch reports" });
+  }
+};
+
+// --- ENDPOINTS PARA O RUSTDESK CLIENT (Sincronização do Livro de Endereços) ---
+
+exports.getAb = async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT d.device_id as id, ab.alias as name, d.os, d.username, ab.tags
+      FROM devices d
+      LEFT JOIN address_book ab ON d.device_id = ab.device_id
+      WHERE ab.alias IS NOT NULL
+    `);
+    
+    // O RustDesk espera um JSON com uma lista de objetos
+    res.json(result.rows.map(item => ({
+      id: item.id,
+      name: item.name,
+      os: item.os,
+      user: item.username,
+      tags: item.tags ? item.tags.split(',') : []
+    })));
+  } catch (err) {
+    console.error("Error fetching AB for client:", err);
+    res.status(500).json([]);
   }
 };

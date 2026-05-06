@@ -8,7 +8,13 @@ const authMiddleware = (req, res, next) => {
 
 router.get("/server-info", authMiddleware, rustdeskController.getServerInfo);
 router.get("/devices", authMiddleware, rustdeskController.getDevices);
+router.post("/alias", authMiddleware, rustdeskController.saveAlias);
+router.get("/reports", authMiddleware, rustdeskController.getReports);
+
+// Endpoints de compatibilidade com o RustDesk Client
+router.get("/ab", rustdeskController.getAb); // Livro de endereços para o app
 router.post("/login", rustdeskController.clientLogin);
 router.post("/heartbeat", rustdeskController.heartbeat);
+router.post("/log", rustdeskController.logConnection); // Endpoint para o client logar conexões
 
 module.exports = router;
