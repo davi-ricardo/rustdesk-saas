@@ -66,10 +66,11 @@ exports.heartbeat = async (req, res) => {
 exports.getDevices = async (req, res) => {
   try {
     const result = await db.query(`
-      SELECT d.*, ab.alias, ab.tags,
+      SELECT d.*, ab.alias, ab.tags, ab.group_id, g.name as group_name,
       CASE WHEN d.last_seen > NOW() - INTERVAL '5 minutes' THEN true ELSE false END as is_online
       FROM devices d
       LEFT JOIN address_book ab ON d.device_id = ab.device_id
+      LEFT JOIN groups g ON ab.group_id = g.id
       ORDER BY d.last_seen DESC
     `);
     res.json(result.rows);
@@ -79,19 +80,20 @@ exports.getDevices = async (req, res) => {
   }
 };
 
-// Address Book - Salvar ou atualizar apelido
+// Address Book - Salvar ou atualizar apelido e grupo
 exports.saveAlias = async (req, res) => {
-  const { device_id, alias, tags } = req.body;
+  const { device_id, alias, tags, group_id } = req.body;
   if (!device_id) return res.status(400).json({ error: "Missing device_id" });
 
   try {
     await db.query(`
-      INSERT INTO address_book (device_id, alias, tags)
-      VALUES ($1, $2, $3)
+      INSERT INTO address_book (device_id, alias, tags, group_id)
+      VALUES ($1, $2, $3, $4)
       ON CONFLICT (device_id) DO UPDATE SET
         alias = EXCLUDED.alias,
-        tags = EXCLUDED.tags
-    `, [device_id, alias, tags]);
+        tags = EXCLUDED.tags,
+        group_id = EXCLUDED.group_id
+    `, [device_id, alias, tags, group_id || null]);
     res.json({ status: "ok" });
   } catch (err) {
     console.error("Error saving alias:", err);

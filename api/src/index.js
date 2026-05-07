@@ -4,6 +4,7 @@ const cors = require("cors");
 const authRoutes = require("./routes/auth");
 const rustdeskRoutes = require("./routes/rustdesk");
 const userRoutes = require("./routes/users");
+const groupRoutes = require("./routes/groups");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,8 +19,9 @@ app.use(express.json());
 
 // Routes
 app.use("/api/auth", authRoutes);
-app.use("/api", rustdeskRoutes); // Removi o /rustdesk para o app achar direto em /api/heartbeat, /api/ab, etc
+app.use("/api", rustdeskRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/groups", groupRoutes);
 
 // Database initialization
 const db = require("./db");
@@ -85,6 +87,21 @@ const initDb = async () => {
         FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
       );
     `);
+
+    // Cria tabela de Grupos (groups)
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS groups (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) UNIQUE NOT NULL,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Adiciona group_id no address_book se não existir
+    try {
+      await db.query("ALTER TABLE address_book ADD COLUMN IF NOT EXISTS group_id INTEGER REFERENCES groups(id) ON DELETE SET NULL");
+    } catch (e) {}
 
     // Cria tabela de Relatórios de Conexão (connection_logs)
     await db.query(`

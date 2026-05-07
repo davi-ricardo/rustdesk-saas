@@ -11,12 +11,18 @@ function App() {
   const [devices, setDevices] = useState([])
   const [reports, setReports] = useState([])
   const [users, setUsers] = useState([])
+  const [groups, setGroups] = useState([])
   const [activeTab, setActiveTab] = useState('devices') 
   const [editingDevice, setEditingDevice] = useState(null)
   const [newAlias, setNewAlias] = useState('')
+  const [newGroupId, setNewGroupId] = useState('')
   const [newUserEmail, setNewUserEmail] = useState('')
   const [newUserPass, setNewUserPass] = useState('')
   const [newUserRole, setNewUserRole] = useState('user')
+  
+  const [newGroupName, setNewGroupName] = useState('')
+  const [newGroupDesc, setNewGroupDesc] = useState('')
+  const [editingGroup, setEditingGroup] = useState(null)
 
   const fetchServerInfo = async () => {
     try {
@@ -46,15 +52,24 @@ function App() {
     } catch (err) { console.error('Erro ao buscar usuários') }
   }
 
+  const fetchGroups = async () => {
+    try {
+      const response = await api.get('/api/groups')
+      setGroups(response.data)
+    } catch (err) { console.error('Erro ao buscar grupos') }
+  }
+
   useEffect(() => {
     if (token) {
       fetchServerInfo()
       fetchDevices()
+      fetchGroups()
       if (activeTab === 'reports') fetchReports()
       if (activeTab === 'users') fetchUsers()
       
       const interval = setInterval(() => {
         fetchDevices()
+        fetchGroups()
         if (activeTab === 'reports') fetchReports()
         if (activeTab === 'users') fetchUsers()
       }, 10000)
@@ -67,17 +82,13 @@ function App() {
     setError('')
     setLoading(true)
     try {
-      console.log('Tentando login com:', email)
       const response = await api.post('/api/auth/login', { email, password })
       const { token: newToken } = response.data
       localStorage.setItem('token', newToken)
       setToken(newToken)
     } catch (err) {
-      console.error('Erro no login:', err)
       setError(err.response?.data?.error || 'Erro de conexão com o servidor')
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
   const handleLogout = () => {
@@ -87,6 +98,7 @@ function App() {
     setDevices([])
     setReports([])
     setUsers([])
+    setGroups([])
   }
 
   const handleSaveAlias = async (e) => {
@@ -94,11 +106,36 @@ function App() {
     try {
       await api.post('/api/alias', { 
         device_id: editingDevice.device_id, 
-        alias: newAlias 
+        alias: newAlias,
+        group_id: newGroupId || null
       })
       setEditingDevice(null)
       fetchDevices()
     } catch (err) { alert('Erro ao salvar apelido') }
+  }
+
+  const handleCreateGroup = async (e) => {
+    e.preventDefault()
+    try {
+      if (editingGroup) {
+        await api.put(`/api/groups/${editingGroup.id}`, { name: newGroupName, description: newGroupDesc })
+      } else {
+        await api.post('/api/groups', { name: newGroupName, description: newGroupDesc })
+      }
+      setNewGroupName('')
+      setNewGroupDesc('')
+      setEditingGroup(null)
+      fetchGroups()
+    } catch (err) { alert('Erro ao gerenciar grupo') }
+  }
+
+  const handleDeleteGroup = async (id) => {
+    if (!window.confirm('Excluir este grupo? Dispositivos vinculados ficarão sem grupo.')) return
+    try {
+      await api.delete(`/api/groups/${id}`)
+      fetchGroups()
+      fetchDevices()
+    } catch (err) { alert('Erro ao excluir grupo') }
   }
 
   const handleCreateUser = async (e) => {
@@ -131,6 +168,7 @@ function App() {
         {/* Abas */}
         <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
           <button onClick={() => setActiveTab('devices')} style={{ padding: '10px 20px', cursor: 'pointer', border: 'none', borderRadius: '4px 4px 0 0', background: activeTab === 'devices' ? '#007bff' : '#eee', color: activeTab === 'devices' ? 'white' : '#333' }}>Dispositivos</button>
+          <button onClick={() => setActiveTab('groups')} style={{ padding: '10px 20px', cursor: 'pointer', border: 'none', borderRadius: '4px 4px 0 0', background: activeTab === 'groups' ? '#007bff' : '#eee', color: activeTab === 'groups' ? 'white' : '#333' }}>Grupos (Departamentos)</button>
           <button onClick={() => setActiveTab('reports')} style={{ padding: '10px 20px', cursor: 'pointer', border: 'none', borderRadius: '4px 4px 0 0', background: activeTab === 'reports' ? '#007bff' : '#eee', color: activeTab === 'reports' ? 'white' : '#333' }}>Relatórios</button>
           <button onClick={() => setActiveTab('users')} style={{ padding: '10px 20px', cursor: 'pointer', border: 'none', borderRadius: '4px 4px 0 0', background: activeTab === 'users' ? '#007bff' : '#eee', color: activeTab === 'users' ? 'white' : '#333' }}>Usuários</button>
         </div>
@@ -153,8 +191,8 @@ function App() {
                     <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
                       <th style={{ padding: '10px' }}>Status</th>
                       <th style={{ padding: '10px' }}>Apelido / Nome</th>
+                      <th style={{ padding: '10px' }}>Grupo</th>
                       <th style={{ padding: '10px' }}>ID RustDesk</th>
-                      <th style={{ padding: '10px' }}>Sistema</th>
                       <th style={{ padding: '10px' }}>Ações</th>
                     </tr>
                   </thead>
@@ -169,9 +207,57 @@ function App() {
                           <strong style={{ color: '#007bff' }}>{device.alias || 'Sem Apelido'}</strong><br />
                           <span style={{ fontSize: '0.8em', color: '#666' }}>{device.username}@{device.hostname}</span>
                         </td>
+                        <td style={{ padding: '10px' }}>
+                          <span style={{ padding: '2px 6px', background: '#e9ecef', borderRadius: '4px', fontSize: '0.8em' }}>
+                            {device.group_name || 'Geral'}
+                          </span>
+                        </td>
                         <td style={{ padding: '10px' }}><code>{device.device_id}</code></td>
-                        <td style={{ padding: '10px', fontSize: '0.9em' }}>{device.os}</td>
-                        <td style={{ padding: '10px' }}><button onClick={() => { setEditingDevice(device); setNewAlias(device.alias || '') }} style={{ padding: '4px 8px', fontSize: '0.8em', cursor: 'pointer' }}>Editar</button></td>
+                        <td style={{ padding: '10px' }}><button onClick={() => { setEditingDevice(device); setNewAlias(device.alias || ''); setNewGroupId(device.group_id || '') }} style={{ padding: '4px 8px', fontSize: '0.8em', cursor: 'pointer' }}>Editar</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'groups' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px' }}>
+              <div style={{ background: '#f8f9fa', padding: '20px', borderRadius: '8px', border: '1px solid #dee2e6' }}>
+                <h3 style={{ marginTop: 0 }}>{editingGroup ? 'Editar Grupo' : 'Novo Grupo'}</h3>
+                <form onSubmit={handleCreateGroup} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <input type="text" value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} placeholder="Nome do Departamento (Ex: RH)" style={{ padding: '8px' }} required />
+                  <textarea value={newGroupDesc} onChange={(e) => setNewGroupDesc(e.target.value)} placeholder="Descrição" style={{ padding: '8px' }} />
+                  <div style={{ display: 'flex', gap: '5px' }}>
+                    <button type="submit" style={{ flex: 1, padding: '10px', background: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                      {editingGroup ? 'Atualizar' : 'Criar Grupo'}
+                    </button>
+                    {editingGroup && <button type="button" onClick={() => { setEditingGroup(null); setNewGroupName(''); setNewGroupDesc('') }} style={{ padding: '10px' }}>Cancelar</button>}
+                  </div>
+                </form>
+              </div>
+              <div>
+                <h3 style={{ marginTop: 0 }}>Lista de Departamentos</h3>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
+                      <th style={{ padding: '10px' }}>Nome</th>
+                      <th style={{ padding: '10px' }}>Descrição</th>
+                      <th style={{ padding: '10px' }}>Dispositivos</th>
+                      <th style={{ padding: '10px' }}>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {groups.map(g => (
+                      <tr key={g.id} style={{ borderBottom: '1px solid #eee' }}>
+                        <td style={{ padding: '10px' }}><strong>{g.name}</strong></td>
+                        <td style={{ padding: '10px', fontSize: '0.9em', color: '#666' }}>{g.description}</td>
+                        <td style={{ padding: '10px' }}>{g.device_count}</td>
+                        <td style={{ padding: '10px' }}>
+                          <button onClick={() => { setEditingGroup(g); setNewGroupName(g.name); setNewGroupDesc(g.description || '') }} style={{ marginRight: '10px', cursor: 'pointer' }}>Editar</button>
+                          <button onClick={() => handleDeleteGroup(g.id)} style={{ color: 'red', cursor: 'pointer' }}>Excluir</button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -258,14 +344,24 @@ function App() {
         </div>
 
         {editingDevice && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ background: 'white', padding: '30px', borderRadius: '8px', minWidth: '300px' }}>
-              <h3>Editar Apelido</h3>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+            <div style={{ background: 'white', padding: '30px', borderRadius: '8px', minWidth: '400px' }}>
+              <h3>Editar Dispositivo</h3>
               <form onSubmit={handleSaveAlias}>
-                <input type="text" value={newAlias} onChange={(e) => setNewAlias(e.target.value)} style={{ width: '100%', padding: '10px', marginBottom: '20px' }} autoFocus />
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9em' }}>Apelido (Nome amigável):</label>
+                  <input type="text" value={newAlias} onChange={(e) => setNewAlias(e.target.value)} style={{ width: '100%', padding: '10px', boxSizing: 'border-box' }} placeholder="Ex: PC do Suporte" autoFocus />
+                </div>
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9em' }}>Departamento / Grupo:</label>
+                  <select value={newGroupId} onChange={(e) => setNewGroupId(e.target.value)} style={{ width: '100%', padding: '10px' }}>
+                    <option value="">Nenhum (Geral)</option>
+                    {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                  </select>
+                </div>
                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                  <button type="button" onClick={() => setEditingDevice(null)}>Cancelar</button>
-                  <button type="submit" style={{ padding: '8px 15px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px' }}>Salvar</button>
+                  <button type="button" onClick={() => setEditingDevice(null)} style={{ padding: '8px 15px' }}>Cancelar</button>
+                  <button type="submit" style={{ padding: '8px 15px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Salvar Alterações</button>
                 </div>
               </form>
             </div>
@@ -279,24 +375,9 @@ function App() {
     <div style={{ padding: '50px', maxWidth: '400px', margin: '0 auto', textAlign: 'center', fontFamily: 'sans-serif' }}>
       <h1 style={{ color: '#007bff' }}>RustDesk SaaS</h1>
       <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <input
-          type="text"
-          placeholder="Usuário ou E-mail"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{ padding: '12px', borderRadius: '4px', border: '1px solid #ccc' }}
-          required
-        />
+        <input type="text" placeholder="Usuário ou E-mail" value={email} onChange={(e) => setEmail(e.target.value)} style={{ padding: '12px', borderRadius: '4px', border: '1px solid #ccc' }} required />
         <input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} style={{ padding: '12px', borderRadius: '4px', border: '1px solid #ccc' }} required />
-        <button type="submit" disabled={loading} style={{ 
-          padding: '12px', 
-          background: loading ? '#ccc' : '#007bff', 
-          color: 'white', 
-          border: 'none', 
-          borderRadius: '4px', 
-          fontWeight: 'bold',
-          cursor: loading ? 'not-allowed' : 'pointer'
-        }}>
+        <button type="submit" disabled={loading} style={{ padding: '12px', background: loading ? '#ccc' : '#007bff', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer' }}>
           {loading ? 'Carregando...' : 'Entrar'}
         </button>
       </form>
