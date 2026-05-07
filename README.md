@@ -2,14 +2,43 @@
 
 Este projeto é um painel de gerenciamento SaaS para servidores **RustDesk**. Ele permite que você centralize o controle de seus servidores de conexão (HBBS/HBBR), rastreie dispositivos online e forneça uma interface amigável para os usuários configurarem seus clientes RustDesk.
 
-## 🚀 Funcionalidades
+## 🚀 Funcionalidades e Como Utilizar
 
-- **Dashboard Visual**: Interface moderna construída com React e Vite.
-- **Gerenciamento de Dispositivos**: Lista em tempo real de dispositivos conectados, com status online/offline.
-- **Integração com VPS**: Configurado para trabalhar com servidores RustDesk existentes em VPS.
-- **Autenticação Segura**: Sistema de login com JWT (JSON Web Tokens).
-- **Banco de Dados Real**: Armazenamento de usuários e dispositivos usando PostgreSQL.
-- **Infraestrutura Docker**: Todo o ambiente (API, Frontend, Banco de Dados e RustDesk Server) roda em containers de fácil implantação.
+O painel foi evoluído para ser uma ferramenta completa de gestão de suporte e infraestrutura. Abaixo estão as funções disponíveis e como aproveitá-las:
+
+### 📱 1. Gerenciamento de Dispositivos (Livro de Endereços)
+- **O que faz**: Lista todos os computadores que utilizam o seu servidor RustDesk.
+- **Como usar**: 
+    - Os IDs aparecem automaticamente assim que o RustDesk Client é configurado com sua API.
+    - Clique em **Editar** para dar um **Apelido** (Ex: "PC Financeiro 01") para facilitar a identificação.
+    - Visualize o status em tempo real (Online/Offline) através dos indicadores coloridos.
+
+### 🏢 2. Grupos por Departamento
+- **O que faz**: Permite organizar os IDs por setores da empresa (RH, TI, Vendas, etc.).
+- **Como usar**:
+    - Vá na aba **Grupos (Departamentos)** para criar e gerenciar os setores.
+    - Na aba **Dispositivos**, edite um computador e vincule-o ao grupo correspondente.
+    - Utilize o botão **Ver IDs** dentro de um grupo para filtrar rapidamente apenas as máquinas daquele setor.
+    - No topo da lista de dispositivos, use o filtro por grupo para uma navegação rápida.
+
+### 📜 3. Relatórios de Conexão (Auditoria)
+- **O que faz**: Registra o histórico de quem acessou qual máquina e por quanto tempo.
+- **Como usar**:
+    - Acesse a aba **Relatórios** para ver os logs de conexões iniciadas e finalizadas.
+    - O sistema identifica automaticamente o apelido do técnico (origem) e do cliente (destino).
+    - Útil para auditoria de segurança e controle de produtividade da equipe de suporte.
+
+### 👥 4. Gerenciamento de Usuários
+- **O que faz**: Controla quem tem permissão para acessar o painel administrativo.
+- **Como usar**:
+    - Na aba **Usuários**, crie contas para seus técnicos.
+    - Defina níveis de acesso (**Admin** ou **User**).
+    - O sistema permite login tanto pelo **Nome de Usuário** quanto pelo **E-mail**.
+
+### 🔗 5. Sincronização Nativa com RustDesk App
+- **O que faz**: Alimenta o "Address Book" do próprio aplicativo RustDesk.
+- **Como usar**:
+    - Ao logar no aplicativo RustDesk do seu computador usando as credenciais do painel, todos os contatos que você nomeou no dashboard aparecerão automaticamente na lista do app, organizados e prontos para conexão.
 
 ## 🛠️ Tecnologias Utilizadas
 
