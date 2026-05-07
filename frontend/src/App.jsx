@@ -13,6 +13,7 @@ function App() {
   const [users, setUsers] = useState([])
   const [groups, setGroups] = useState([])
   const [activeTab, setActiveTab] = useState('devices') 
+  const [filterGroupId, setFilterGroupId] = useState('')
   const [editingDevice, setEditingDevice] = useState(null)
   const [newAlias, setNewAlias] = useState('')
   const [newGroupId, setNewGroupId] = useState('')
@@ -185,7 +186,21 @@ function App() {
                 </div>
               </div>
               <div>
-                <h3 style={{ marginTop: 0 }}>Livro de Endereços</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <h3 style={{ margin: 0 }}>Livro de Endereços</h3>
+                  <div>
+                    <label style={{ fontSize: '0.9em', marginRight: '10px' }}>Filtrar por Grupo:</label>
+                    <select 
+                      value={filterGroupId} 
+                      onChange={(e) => setFilterGroupId(e.target.value)}
+                      style={{ padding: '5px', borderRadius: '4px' }}
+                    >
+                      <option value="">Todos os Grupos</option>
+                      <option value="none">Sem Grupo (Geral)</option>
+                      {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                    </select>
+                  </div>
+                </div>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
@@ -197,7 +212,13 @@ function App() {
                     </tr>
                   </thead>
                   <tbody>
-                    {devices.map(device => (
+                    {devices
+                      .filter(d => {
+                        if (!filterGroupId) return true;
+                        if (filterGroupId === 'none') return !d.group_id;
+                        return d.group_id == filterGroupId;
+                      })
+                      .map(device => (
                       <tr key={device.id} style={{ borderBottom: '1px solid #eee' }}>
                         <td style={{ padding: '10px' }}>
                           <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '50%', backgroundColor: device.is_online ? '#28a745' : '#dc3545', marginRight: '5px' }}></span>
@@ -255,6 +276,12 @@ function App() {
                         <td style={{ padding: '10px', fontSize: '0.9em', color: '#666' }}>{g.description}</td>
                         <td style={{ padding: '10px' }}>{g.device_count}</td>
                         <td style={{ padding: '10px' }}>
+                          <button 
+                            onClick={() => { setFilterGroupId(g.id); setActiveTab('devices') }}
+                            style={{ marginRight: '10px', cursor: 'pointer', background: '#e7f3ff', color: '#007bff', border: '1px solid #007bff', borderRadius: '4px', padding: '4px 8px' }}
+                          >
+                            Ver IDs
+                          </button>
                           <button onClick={() => { setEditingGroup(g); setNewGroupName(g.name); setNewGroupDesc(g.description || '') }} style={{ marginRight: '10px', cursor: 'pointer' }}>Editar</button>
                           <button onClick={() => handleDeleteGroup(g.id)} style={{ color: 'red', cursor: 'pointer' }}>Excluir</button>
                         </td>
