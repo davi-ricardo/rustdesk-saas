@@ -20,21 +20,21 @@ function App() {
 
   const fetchServerInfo = async () => {
     try {
-      const response = await api.get('/api/rustdesk/server-info')
+      const response = await api.get('/api/server-info')
       setServerInfo(response.data)
     } catch (err) { console.error('Erro ao buscar info do servidor') }
   }
 
   const fetchDevices = async () => {
     try {
-      const response = await api.get('/api/rustdesk/devices')
+      const response = await api.get('/api/devices')
       setDevices(response.data)
     } catch (err) { console.error('Erro ao buscar dispositivos') }
   }
 
   const fetchReports = async () => {
     try {
-      const response = await api.get('/api/rustdesk/reports')
+      const response = await api.get('/api/reports')
       setReports(response.data)
     } catch (err) { console.error('Erro ao buscar relatórios') }
   }
@@ -92,7 +92,7 @@ function App() {
   const handleSaveAlias = async (e) => {
     e.preventDefault()
     try {
-      await api.post('/api/rustdesk/alias', { 
+      await api.post('/api/alias', { 
         device_id: editingDevice.device_id, 
         alias: newAlias 
       })

@@ -18,7 +18,7 @@ app.use(express.json());
 
 // Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/rustdesk", rustdeskRoutes);
+app.use("/api", rustdeskRoutes); // Removi o /rustdesk para o app achar direto em /api/heartbeat, /api/ab, etc
 app.use("/api/users", userRoutes);
 
 // Database initialization
