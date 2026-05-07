@@ -30,10 +30,18 @@ exports.clientLogin = (req, res) => {
 };
 
 exports.heartbeat = async (req, res) => {
+  // Log para depuração na VPS (docker logs rustdesk-saas-api-1)
+  console.log("Heartbeat recebido:", JSON.stringify(req.body));
+  
+  // O RustDesk Client pode enviar os dados de formas diferentes
   const { id, uuid, username, hostname, os } = req.body;
-  const ip = req.ip || req.connection.remoteAddress;
+  const device_id = id || req.body.device_id;
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
-  if (!id) return res.json({ status: "error", message: "Missing ID" });
+  if (!device_id) {
+    console.log("Aviso: Heartbeat sem device_id");
+    return res.json({ status: "ok" }); // Retorna ok para o client não reclamar
+  }
 
   try {
     await db.query(`
@@ -46,11 +54,11 @@ exports.heartbeat = async (req, res) => {
         ip_address = EXCLUDED.ip_address,
         os = EXCLUDED.os,
         last_seen = CURRENT_TIMESTAMP
-    `, [id, uuid, username, hostname, ip, os]);
+    `, [device_id, uuid, username, hostname, ip, os]);
 
     res.json({ status: "ok" });
   } catch (err) {
-    console.error("Heartbeat error:", err);
+    console.error("Erro ao processar heartbeat no banco:", err);
     res.status(500).json({ status: "error" });
   }
 };
