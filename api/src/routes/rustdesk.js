@@ -15,6 +15,8 @@ router.get("/reports", authMiddleware, rustdeskController.getReports);
 router.get("/ab", rustdeskController.getAb); // Livro de endereços para o app
 router.post("/login", rustdeskController.clientLogin);
 router.post("/heartbeat", rustdeskController.heartbeat);
-router.post("/log", rustdeskController.logConnection); // Endpoint para o client logar conexões
+router.post("/log", rustdeskController.logConnection);
+router.post("/audit", rustdeskController.logConnection); // Alias comum em algumas versões
+router.post("/audit/log", rustdeskController.logConnection); // Outro alias comum
 
 module.exports = router;

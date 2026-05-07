@@ -101,13 +101,26 @@ exports.saveAlias = async (req, res) => {
 
 // Connection Logs - Capturar eventos
 exports.logConnection = async (req, res) => {
-  const { from_device_id, to_device_id, action, duration } = req.body;
+  // Log para depuração na VPS
+  console.log("Log de conexão recebido:", JSON.stringify(req.body));
   
+  // O RustDesk pode enviar no body ou como campos soltos
+  const { from_device_id, to_device_id, action, duration, id, target_id, type } = req.body;
+  
+  // Mapeia os diferentes formatos possíveis do RustDesk
+  const final_from = from_device_id || id;
+  const final_to = to_device_id || target_id;
+  const final_action = action || type;
+
+  if (!final_from || !final_to) {
+    return res.json({ status: "ok" }); // Retorna ok para o client
+  }
+
   try {
     await db.query(`
       INSERT INTO connection_logs (from_device_id, to_device_id, action, duration)
       VALUES ($1, $2, $3, $4)
-    `, [from_device_id, to_device_id, action, duration || 0]);
+    `, [final_from, final_to, final_action, duration || 0]);
     res.json({ status: "ok" });
   } catch (err) {
     console.error("Error logging connection:", err);
