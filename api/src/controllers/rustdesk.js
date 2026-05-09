@@ -1,4 +1,5 @@
 const fs = require('fs');
+const XLSX = require('xlsx');
 const db = require("../db");
 
 exports.getServerInfo = (req, res) => {
@@ -136,10 +137,12 @@ exports.getReports = async (req, res) => {
     const result = await db.query(`
       SELECT cl.*, 
              f.alias as from_alias, 
-             t.alias as to_alias
+             t.alias as to_alias,
+             sc.name as category_name
       FROM connection_logs cl
       LEFT JOIN address_book f ON cl.from_device_id = f.device_id
       LEFT JOIN address_book t ON cl.to_device_id = t.device_id
+      LEFT JOIN service_categories sc ON cl.category_id = sc.id
       ORDER BY cl.timestamp DESC
       LIMIT 100
     `);
@@ -147,6 +150,91 @@ exports.getReports = async (req, res) => {
   } catch (err) {
     console.error("Error fetching reports:", err);
     res.status(500).json({ error: "Failed to fetch reports" });
+  }
+};
+
+// Atualizar categoria de um log
+exports.updateLogCategory = async (req, res) => {
+  const { id } = req.params;
+  const { category_id } = req.body;
+  
+  try {
+    await db.query(
+      "UPDATE connection_logs SET category_id = $1 WHERE id = $2",
+      [category_id || null, id]
+    );
+    res.json({ status: "ok" });
+  } catch (err) {
+    console.error("Error updating log category:", err);
+    res.status(500).json({ error: "Failed to update log category" });
+  }
+};
+
+// Exportar relatório para XLS
+exports.exportXLS = async (req, res) => {
+  const { month, year } = req.query;
+  
+  try {
+    let query = `
+      SELECT 
+        cl.timestamp as data_hora,
+        COALESCE(f.alias, cl.from_device_id) as tecnico_origem,
+        COALESCE(t.alias, cl.to_device_id) as destino,
+        sc.name as tipo_servico,
+        cl.action as acao,
+        cl.duration as duracao_segundos
+      FROM connection_logs cl
+      LEFT JOIN address_book f ON cl.from_device_id = f.device_id
+      LEFT JOIN address_book t ON cl.to_device_id = t.device_id
+      LEFT JOIN service_categories sc ON cl.category_id = sc.id
+    `;
+    const params = [];
+    
+    if (month && year) {
+      query += ` WHERE EXTRACT(MONTH FROM cl.timestamp) = $1 AND EXTRACT(YEAR FROM cl.timestamp) = $2`;
+      params.push(month, year);
+    }
+    
+    query += ` ORDER BY cl.timestamp DESC`;
+    
+    const result = await db.query(query, params);
+    
+    // Preparar dados para XLS
+    const data = result.rows.map(row => ({
+      "Data/Hora": row.data_hora ? new Date(row.data_hora).toLocaleString('pt-BR') : '',
+      "Técnico (Origem)": row.tecnico_origem || '',
+      "Destino": row.destino || '',
+      "Tipo de Serviço": row.tipo_servico || '',
+      "Ação": row.acao === 'start' ? 'Iniciada' : row.acao === 'end' ? 'Finalizada' : row.acao || '',
+      "Duração (segundos)": row.duracao_segundos || ''
+    }));
+    
+    // Criar workbook e worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    
+    // Ajustar largura das colunas
+    worksheet['!cols'] = [
+      { wch: 20 },
+      { wch: 25 },
+      { wch: 25 },
+      { wch: 30 },
+      { wch: 12 },
+      { wch: 18 }
+    ];
+    
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Relatório de Conexões");
+    
+    // Enviar arquivo
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=relatorio_rustdesk.xlsx');
+    
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    res.send(buffer);
+    
+  } catch (err) {
+    console.error("Error exporting XLS:", err);
+    res.status(500).json({ error: "Failed to export XLS" });
   }
 };
 

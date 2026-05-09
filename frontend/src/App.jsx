@@ -5,6 +5,7 @@ function App() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [token, setToken] = useState(localStorage.getItem('token'))
+  const [currentUser, setCurrentUser] = useState(JSON.parse(localStorage.getItem('currentUser') || 'null'))
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [serverInfo, setServerInfo] = useState(null)
@@ -24,6 +25,14 @@ function App() {
   const [newGroupName, setNewGroupName] = useState('')
   const [newGroupDesc, setNewGroupDesc] = useState('')
   const [editingGroup, setEditingGroup] = useState(null)
+  const [serviceCategories, setServiceCategories] = useState([])
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [newCategoryDesc, setNewCategoryDesc] = useState('')
+  const [editingCategory, setEditingCategory] = useState(null)
+  const [editingLog, setEditingLog] = useState(null)
+  const [selectedCategoryId, setSelectedCategoryId] = useState('')
+  const [exportMonth, setExportMonth] = useState(String(new Date().getMonth() + 1).padStart(2, '0'))
+  const [exportYear, setExportYear] = useState(String(new Date().getFullYear()))
 
   const fetchServerInfo = async () => {
     try {
@@ -60,23 +69,92 @@ function App() {
     } catch (err) { console.error('Erro ao buscar grupos') }
   }
 
+  const fetchServiceCategories = async () => {
+    try {
+      const response = await api.get('/api/service-categories')
+      setServiceCategories(response.data)
+    } catch (err) { console.error('Erro ao buscar categorias de serviço') }
+  }
+
+  const handleCreateCategory = async (e) => {
+    e.preventDefault()
+    try {
+      if (editingCategory) {
+        await api.put(`/api/service-categories/${editingCategory.id}`, { name: newCategoryName, description: newCategoryDesc })
+      } else {
+        await api.post('/api/service-categories', { name: newCategoryName, description: newCategoryDesc })
+      }
+      setNewCategoryName('')
+      setNewCategoryDesc('')
+      setEditingCategory(null)
+      fetchServiceCategories()
+    } catch (err) { alert('Erro ao gerenciar categoria') }
+  }
+
+  const handleDeleteCategory = async (id) => {
+    if (!window.confirm('Excluir esta categoria? Logs vinculados ficarão sem categoria.')) return
+    try {
+      await api.delete(`/api/service-categories/${id}`)
+      fetchServiceCategories()
+    } catch (err) { alert('Erro ao excluir categoria') }
+  }
+
+  const handleSaveLogCategory = async (e) => {
+    e.preventDefault()
+    try {
+      await api.put(`/api/reports/${editingLog.id}/category`, { 
+        category_id: selectedCategoryId ? parseInt(selectedCategoryId) : null 
+      })
+      setEditingLog(null)
+      setSelectedCategoryId('')
+      fetchReports()
+    } catch (err) { alert('Erro ao salvar categoria do log') }
+  }
+
+  const handleExportXLS = async () => {
+    try {
+      const response = await api.get(`/api/reports/export/xls?month=${exportMonth}&year=${exportYear}`, {
+        responseType: 'blob'
+      })
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `relatorio_rustdesk_${exportMonth}_${exportYear}.xlsx`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+    } catch (err) { alert('Erro ao exportar relatório') }
+  }
+
   useEffect(() => {
     if (token) {
       fetchServerInfo()
       fetchDevices()
       fetchGroups()
+      if (currentUser?.role === 'admin') {
+        fetchServiceCategories()
+      }
       if (activeTab === 'reports') fetchReports()
       if (activeTab === 'users') fetchUsers()
       
       const interval = setInterval(() => {
         fetchDevices()
         fetchGroups()
+        if (currentUser?.role === 'admin') {
+          fetchServiceCategories()
+        }
         if (activeTab === 'reports') fetchReports()
         if (activeTab === 'users') fetchUsers()
       }, 10000)
       return () => clearInterval(interval)
     }
-  }, [token, activeTab])
+  }, [token, activeTab, currentUser])
+
+  useEffect(() => {
+    if (activeTab === 'service-categories' && currentUser?.role !== 'admin') {
+      setActiveTab('devices')
+    }
+  }, [activeTab, currentUser])
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -84,17 +162,26 @@ function App() {
     setLoading(true)
     try {
       const response = await api.post('/api/auth/login', { email, password })
-      const { token: newToken } = response.data
+      const { token: newToken, user } = response.data
       localStorage.setItem('token', newToken)
+      localStorage.setItem('currentUser', JSON.stringify(user))
       setToken(newToken)
+      setCurrentUser(user)
     } catch (err) {
-      setError(err.response?.data?.error || 'Erro de conexão com o servidor')
+      const errorMsg = err.response?.data?.error
+      if (errorMsg === 'User is disabled') {
+        setError('Este usuário está desativado')
+      } else {
+        setError(errorMsg || 'Erro de conexão com o servidor')
+      }
     } finally { setLoading(false) }
   }
 
   const handleLogout = () => {
     localStorage.removeItem('token')
+    localStorage.removeItem('currentUser')
     setToken(null)
+    setCurrentUser(null)
     setServerInfo(null)
     setDevices([])
     setReports([])
@@ -150,12 +237,13 @@ function App() {
     } catch (err) { alert('Erro ao criar usuário') }
   }
 
-  const handleDeleteUser = async (id) => {
-    if (!window.confirm('Excluir este usuário?')) return
+  const handleToggleUserStatus = async (id, isActive) => {
+    const confirmMsg = isActive ? 'Desativar este usuário?' : 'Ativar este usuário?'
+    if (!window.confirm(confirmMsg)) return
     try {
-      await api.delete(`/api/users/${id}`)
+      await api.put(`/api/users/${id}/toggle`)
       fetchUsers()
-    } catch (err) { alert('Erro ao excluir usuário') }
+    } catch (err) { alert('Erro ao atualizar status do usuário') }
   }
 
   if (token) {
@@ -167,10 +255,13 @@ function App() {
         </div>
 
         {/* Abas */}
-        <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+        <div style={{ display: 'flex', gap: '10px', marginTop: '20px', flexWrap: 'wrap' }}>
           <button onClick={() => setActiveTab('devices')} style={{ padding: '10px 20px', cursor: 'pointer', border: 'none', borderRadius: '4px 4px 0 0', background: activeTab === 'devices' ? '#007bff' : '#eee', color: activeTab === 'devices' ? 'white' : '#333' }}>Dispositivos</button>
           <button onClick={() => setActiveTab('groups')} style={{ padding: '10px 20px', cursor: 'pointer', border: 'none', borderRadius: '4px 4px 0 0', background: activeTab === 'groups' ? '#007bff' : '#eee', color: activeTab === 'groups' ? 'white' : '#333' }}>Grupos (Departamentos)</button>
           <button onClick={() => setActiveTab('reports')} style={{ padding: '10px 20px', cursor: 'pointer', border: 'none', borderRadius: '4px 4px 0 0', background: activeTab === 'reports' ? '#007bff' : '#eee', color: activeTab === 'reports' ? 'white' : '#333' }}>Relatórios</button>
+          {currentUser?.role === 'admin' && (
+            <button onClick={() => setActiveTab('service-categories')} style={{ padding: '10px 20px', cursor: 'pointer', border: 'none', borderRadius: '4px 4px 0 0', background: activeTab === 'service-categories' ? '#007bff' : '#eee', color: activeTab === 'service-categories' ? 'white' : '#333' }}>Tipos de Serviço</button>
+          )}
           <button onClick={() => setActiveTab('users')} style={{ padding: '10px 20px', cursor: 'pointer', border: 'none', borderRadius: '4px 4px 0 0', background: activeTab === 'users' ? '#007bff' : '#eee', color: activeTab === 'users' ? 'white' : '#333' }}>Usuários</button>
         </div>
 
@@ -295,15 +386,36 @@ function App() {
 
           {activeTab === 'reports' && (
             <div>
-              <h3 style={{ marginTop: 0 }}>Histórico de Conexões</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 style={{ margin: 0 }}>Histórico de Conexões</h3>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <label style={{ fontSize: '0.9em' }}>Mês:</label>
+                  <select value={exportMonth} onChange={(e) => setExportMonth(e.target.value)} style={{ padding: '6px', borderRadius: '4px' }}>
+                    {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')).map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                  <label style={{ fontSize: '0.9em' }}>Ano:</label>
+                  <select value={exportYear} onChange={(e) => setExportYear(e.target.value)} style={{ padding: '6px', borderRadius: '4px' }}>
+                    {[2024, 2025, 2026, 2027, 2028].map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                  <button onClick={handleExportXLS} style={{ padding: '8px 16px', background: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                    Exportar XLS
+                  </button>
+                </div>
+              </div>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
                     <th style={{ padding: '10px' }}>Data/Hora</th>
                     <th style={{ padding: '10px' }}>Origem (Técnico)</th>
                     <th style={{ padding: '10px' }}>Destino (Cliente)</th>
+                    <th style={{ padding: '10px' }}>Tipo de Serviço</th>
                     <th style={{ padding: '10px' }}>Ação</th>
                     <th style={{ padding: '10px' }}>Duração</th>
+                    <th style={{ padding: '10px' }}>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -313,15 +425,75 @@ function App() {
                       <td style={{ padding: '10px' }}>{log.from_alias || log.from_device_id || 'Desconhecido'}</td>
                       <td style={{ padding: '10px' }}>{log.to_alias || log.to_device_id}</td>
                       <td style={{ padding: '10px' }}>
+                        <span style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '0.8em', background: log.category_name ? '#e7f3ff' : '#e9ecef', color: log.category_name ? '#007bff' : '#666' }}>
+                          {log.category_name || 'Não classificado'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '10px' }}>
                         <span style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '0.8em', background: log.action === 'start' ? '#d4edda' : '#f8d7da', color: log.action === 'start' ? '#155724' : '#721c24' }}>
                           {log.action === 'start' ? 'Iniciada' : 'Finalizada'}
                         </span>
                       </td>
                       <td style={{ padding: '10px' }}>{log.duration ? `${log.duration}s` : '-'}</td>
+                      <td style={{ padding: '10px' }}>
+                        <button 
+                          onClick={() => { setEditingLog(log); setSelectedCategoryId(log.category_id || '') }}
+                          style={{ padding: '4px 8px', fontSize: '0.8em', cursor: 'pointer' }}
+                        >
+                          Classificar
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {activeTab === 'service-categories' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px' }}>
+              <div style={{ background: '#f8f9fa', padding: '20px', borderRadius: '8px', border: '1px solid #dee2e6' }}>
+                <h3 style={{ marginTop: 0 }}>{editingCategory ? 'Editar Tipo' : 'Novo Tipo de Serviço'}</h3>
+                <form onSubmit={handleCreateCategory} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <input type="text" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} placeholder="Nome (Ex: Problema na impressora)" style={{ padding: '8px' }} required />
+                  <textarea value={newCategoryDesc} onChange={(e) => setNewCategoryDesc(e.target.value)} placeholder="Descrição" style={{ padding: '8px' }} />
+                  <div style={{ display: 'flex', gap: '5px' }}>
+                    <button type="submit" style={{ flex: 1, padding: '10px', background: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                      {editingCategory ? 'Atualizar' : 'Criar Tipo'}
+                    </button>
+                    {editingCategory && <button type="button" onClick={() => { setEditingCategory(null); setNewCategoryName(''); setNewCategoryDesc('') }} style={{ padding: '10px' }}>Cancelar</button>}
+                  </div>
+                </form>
+              </div>
+              <div>
+                <h3 style={{ marginTop: 0 }}>Tipos de Serviço</h3>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
+                      <th style={{ padding: '10px' }}>Nome</th>
+                      <th style={{ padding: '10px' }}>Descrição</th>
+                      <th style={{ padding: '10px' }}>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {serviceCategories.map(cat => (
+                      <tr key={cat.id} style={{ borderBottom: '1px solid #eee' }}>
+                        <td style={{ padding: '10px' }}><strong>{cat.name}</strong></td>
+                        <td style={{ padding: '10px', fontSize: '0.9em', color: '#666' }}>{cat.description}</td>
+                        <td style={{ padding: '10px' }}>
+                          <button 
+                            onClick={() => { setEditingCategory(cat); setNewCategoryName(cat.name); setNewCategoryDesc(cat.description || '') }}
+                            style={{ marginRight: '10px', cursor: 'pointer' }}
+                          >
+                            Editar
+                          </button>
+                          <button onClick={() => handleDeleteCategory(cat.id)} style={{ color: 'red', cursor: 'pointer' }}>Excluir</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
@@ -346,19 +518,36 @@ function App() {
                     <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
                       <th style={{ padding: '10px' }}>E-mail</th>
                       <th style={{ padding: '10px' }}>Nível</th>
+                      <th style={{ padding: '10px' }}>Status</th>
                       <th style={{ padding: '10px' }}>Ações</th>
                     </tr>
                   </thead>
                   <tbody>
                     {users.map(u => (
-                      <tr key={u.id} style={{ borderBottom: '1px solid #eee' }}>
+                      <tr key={u.id} style={{ borderBottom: '1px solid #eee', opacity: u.is_active ? 1 : 0.6 }}>
                         <td style={{ padding: '10px' }}>{u.email}</td>
                         <td style={{ padding: '10px' }}>
                           <span style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '0.8em', background: u.role === 'admin' ? '#fff3cd' : '#e2e3e5' }}>{u.role}</span>
                         </td>
                         <td style={{ padding: '10px' }}>
-                          {u.email !== email && (
-                            <button onClick={() => handleDeleteUser(u.id)} style={{ color: 'red', cursor: 'pointer', border: 'none', background: 'none' }}>Excluir</button>
+                          <span style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '0.8em', background: u.is_active ? '#d4edda' : '#f8d7da', color: u.is_active ? '#155724' : '#721c24' }}>
+                            {u.is_active ? 'Ativo' : 'Desativado'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px' }}>
+                          {u.username !== 'administrador' && (
+                            <button 
+                              onClick={() => handleToggleUserStatus(u.id, u.is_active)} 
+                              style={{ 
+                                color: u.is_active ? '#dc3545' : '#28a745', 
+                                cursor: 'pointer', 
+                                border: 'none', 
+                                background: 'none',
+                                fontWeight: 'bold'
+                              }}
+                            >
+                              {u.is_active ? 'Desativar' : 'Ativar'}
+                            </button>
                           )}
                         </td>
                       </tr>
@@ -389,6 +578,27 @@ function App() {
                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
                   <button type="button" onClick={() => setEditingDevice(null)} style={{ padding: '8px 15px' }}>Cancelar</button>
                   <button type="submit" style={{ padding: '8px 15px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Salvar Alterações</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {editingLog && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+            <div style={{ background: 'white', padding: '30px', borderRadius: '8px', minWidth: '400px' }}>
+              <h3>Classificar Log</h3>
+              <form onSubmit={handleSaveLogCategory}>
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9em' }}>Tipo de Serviço:</label>
+                  <select value={selectedCategoryId} onChange={(e) => setSelectedCategoryId(e.target.value)} style={{ width: '100%', padding: '10px' }}>
+                    <option value="">Não classificado</option>
+                    {serviceCategories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                  </select>
+                </div>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                  <button type="button" onClick={() => { setEditingLog(null); setSelectedCategoryId('') }} style={{ padding: '8px 15px' }}>Cancelar</button>
+                  <button type="submit" style={{ padding: '8px 15px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Salvar</button>
                 </div>
               </form>
             </div>

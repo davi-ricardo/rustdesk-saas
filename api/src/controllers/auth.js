@@ -13,13 +13,18 @@ exports.login = async (req, res) => {
     const user = result.rows[0];
 
     if (user && user.password === password) {
+      // Verifica se o usuário está ativo
+      if (!user.is_active) {
+        return res.status(403).json({ error: "User is disabled" });
+      }
+      
       const token = jwt.sign(
-        { userId: user.id },
+        { userId: user.id, role: user.role },
         process.env.JWT_SECRET || "supersecretkey",
         { expiresIn: "1d" }
       );
 
-      return res.json({ token, user: { id: user.id, email: user.email } });
+      return res.json({ token, user: { id: user.id, email: user.email, role: user.role, username: user.username } });
     }
 
     return res.status(401).json({ error: "Invalid credentials" });

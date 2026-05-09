@@ -5,6 +5,7 @@ const authRoutes = require("./routes/auth");
 const rustdeskRoutes = require("./routes/rustdesk");
 const userRoutes = require("./routes/users");
 const groupRoutes = require("./routes/groups");
+const serviceCategoriesRoutes = require("./routes/serviceCategories");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -22,6 +23,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api", rustdeskRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/groups", groupRoutes);
+app.use("/api/service-categories", serviceCategoriesRoutes);
 
 // Database initialization
 const db = require("./db");
@@ -35,6 +37,7 @@ const initDb = async () => {
         email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
         role VARCHAR(20) DEFAULT 'user',
+        is_active BOOLEAN DEFAULT true,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -43,6 +46,7 @@ const initDb = async () => {
     try {
       await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'user'");
       await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(50) UNIQUE");
+      await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true");
     } catch (e) {}
     
     // Cria ou atualiza o administrador baseado nas variáveis de ambiente
@@ -103,6 +107,16 @@ const initDb = async () => {
       await db.query("ALTER TABLE address_book ADD COLUMN IF NOT EXISTS group_id INTEGER REFERENCES groups(id) ON DELETE SET NULL");
     } catch (e) {}
 
+    // Cria tabela de Categorias de Serviços
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS service_categories (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) UNIQUE NOT NULL,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     // Cria tabela de Relatórios de Conexão (connection_logs)
     await db.query(`
       CREATE TABLE IF NOT EXISTS connection_logs (
@@ -111,9 +125,16 @@ const initDb = async () => {
         to_device_id VARCHAR(50),
         action VARCHAR(20), -- 'start', 'end'
         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        duration INTEGER -- em segundos, opcional para o evento 'end'
+        duration INTEGER, -- em segundos, opcional para o evento 'end'
+        category_id INTEGER REFERENCES service_categories(id) ON DELETE SET NULL
       );
     `);
+
+    // Migração: Adiciona category_id no connection_logs se não existir
+    try {
+      await db.query("ALTER TABLE connection_logs ADD COLUMN IF NOT EXISTS category_id INTEGER REFERENCES service_categories(id) ON DELETE SET NULL");
+    } catch (e) {}
+
     console.log("Database tables ensured");
   } catch (err) {
     console.error("Error initializing database:", err);

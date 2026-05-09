@@ -10,6 +10,8 @@ router.get("/server-info", authMiddleware, rustdeskController.getServerInfo);
 router.get("/devices", authMiddleware, rustdeskController.getDevices);
 router.post("/alias", authMiddleware, rustdeskController.saveAlias);
 router.get("/reports", authMiddleware, rustdeskController.getReports);
+router.put("/reports/:id/category", authMiddleware, rustdeskController.updateLogCategory);
+router.get("/reports/export/xls", authMiddleware, rustdeskController.exportXLS);
 
 // Endpoints de compatibilidade com o RustDesk Client
 router.get("/ab", rustdeskController.getAb); // Livro de endereços para o app

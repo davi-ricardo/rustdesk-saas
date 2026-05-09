@@ -10,6 +10,6 @@ const adminOnly = (req, res, next) => {
 
 router.get("/", adminOnly, userController.listUsers);
 router.post("/", adminOnly, userController.createUser);
-router.delete("/:id", adminOnly, userController.deleteUser);
+router.put("/:id/toggle", adminOnly, userController.toggleUserStatus);
 
 module.exports = router;
