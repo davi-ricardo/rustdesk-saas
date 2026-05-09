@@ -18,9 +18,15 @@ function App() {
   const [editingDevice, setEditingDevice] = useState(null)
   const [newAlias, setNewAlias] = useState('')
   const [newGroupId, setNewGroupId] = useState('')
+  const [newUserName, setNewUserName] = useState('')
   const [newUserEmail, setNewUserEmail] = useState('')
   const [newUserPass, setNewUserPass] = useState('')
   const [newUserRole, setNewUserRole] = useState('user')
+  const [editingUser, setEditingUser] = useState(null)
+  const [editUserName, setEditUserName] = useState('')
+  const [editUserEmail, setEditUserEmail] = useState('')
+  const [editUserPass, setEditUserPass] = useState('')
+  const [editUserRole, setEditUserRole] = useState('user')
   
   const [newGroupName, setNewGroupName] = useState('')
   const [newGroupDesc, setNewGroupDesc] = useState('')
@@ -135,7 +141,7 @@ function App() {
         fetchServiceCategories()
       }
       if (activeTab === 'reports') fetchReports()
-      if (activeTab === 'users') fetchUsers()
+      if (activeTab === 'users' && currentUser?.role === 'admin') fetchUsers()
       
       const interval = setInterval(() => {
         fetchDevices()
@@ -144,7 +150,7 @@ function App() {
           fetchServiceCategories()
         }
         if (activeTab === 'reports') fetchReports()
-        if (activeTab === 'users') fetchUsers()
+        if (activeTab === 'users' && currentUser?.role === 'admin') fetchUsers()
       }, 10000)
       return () => clearInterval(interval)
     }
@@ -152,6 +158,9 @@ function App() {
 
   useEffect(() => {
     if (activeTab === 'service-categories' && currentUser?.role !== 'admin') {
+      setActiveTab('devices')
+    }
+    if (activeTab === 'users' && currentUser?.role !== 'admin') {
       setActiveTab('devices')
     }
   }, [activeTab, currentUser])
@@ -229,12 +238,34 @@ function App() {
   const handleCreateUser = async (e) => {
     e.preventDefault()
     try {
-      await api.post('/api/users', { email: newUserEmail, password: newUserPass, role: newUserRole })
+      await api.post('/api/users', { username: newUserName, email: newUserEmail, password: newUserPass, role: newUserRole })
+      setNewUserName('')
       setNewUserEmail('')
       setNewUserPass('')
       fetchUsers()
       alert('Usuário criado!')
     } catch (err) { alert('Erro ao criar usuário') }
+  }
+
+  const handleSaveUser = async (e) => {
+    e.preventDefault()
+    try {
+      const userData = {
+        username: editUserName,
+        email: editUserEmail,
+        role: editUserRole
+      }
+      if (editUserPass) {
+        userData.password = editUserPass
+      }
+      await api.put(`/api/users/${editingUser.id}`, userData)
+      setEditingUser(null)
+      setEditUserName('')
+      setEditUserEmail('')
+      setEditUserPass('')
+      fetchUsers()
+      alert('Usuário atualizado!')
+    } catch (err) { alert('Erro ao atualizar usuário') }
   }
 
   const handleToggleUserStatus = async (id, isActive) => {
@@ -262,7 +293,9 @@ function App() {
           {currentUser?.role === 'admin' && (
             <button onClick={() => setActiveTab('service-categories')} style={{ padding: '10px 20px', cursor: 'pointer', border: 'none', borderRadius: '4px 4px 0 0', background: activeTab === 'service-categories' ? '#007bff' : '#eee', color: activeTab === 'service-categories' ? 'white' : '#333' }}>Tipos de Serviço</button>
           )}
-          <button onClick={() => setActiveTab('users')} style={{ padding: '10px 20px', cursor: 'pointer', border: 'none', borderRadius: '4px 4px 0 0', background: activeTab === 'users' ? '#007bff' : '#eee', color: activeTab === 'users' ? 'white' : '#333' }}>Usuários</button>
+          {currentUser?.role === 'admin' && (
+            <button onClick={() => setActiveTab('users')} style={{ padding: '10px 20px', cursor: 'pointer', border: 'none', borderRadius: '4px 4px 0 0', background: activeTab === 'users' ? '#007bff' : '#eee', color: activeTab === 'users' ? 'white' : '#333' }}>Usuários</button>
+          )}
         </div>
 
         <div style={{ background: '#fff', padding: '20px', borderRadius: '0 0 8px 8px', border: '1px solid #dee2e6', borderTop: 'none' }}>
@@ -502,7 +535,8 @@ function App() {
               <div style={{ background: '#f8f9fa', padding: '20px', borderRadius: '8px', border: '1px solid #dee2e6' }}>
                 <h3 style={{ marginTop: 0 }}>Novo Usuário</h3>
                 <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <input type="text" value={newUserEmail} onChange={(e) => setNewUserEmail(e.target.value)} placeholder="Usuário ou E-mail" style={{ padding: '8px' }} required />
+                  <input type="text" value={newUserName} onChange={(e) => setNewUserName(e.target.value)} placeholder="Nome de Usuário (opcional)" style={{ padding: '8px' }} />
+                  <input type="email" value={newUserEmail} onChange={(e) => setNewUserEmail(e.target.value)} placeholder="E-mail" style={{ padding: '8px' }} required />
                   <input type="password" value={newUserPass} onChange={(e) => setNewUserPass(e.target.value)} placeholder="Senha" style={{ padding: '8px' }} required />
                   <select value={newUserRole} onChange={(e) => setNewUserRole(e.target.value)} style={{ padding: '8px' }}>
                     <option value="user">Usuário (Técnico)</option>
@@ -516,6 +550,7 @@ function App() {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
+                      <th style={{ padding: '10px' }}>Usuário</th>
                       <th style={{ padding: '10px' }}>E-mail</th>
                       <th style={{ padding: '10px' }}>Nível</th>
                       <th style={{ padding: '10px' }}>Status</th>
@@ -525,6 +560,7 @@ function App() {
                   <tbody>
                     {users.map(u => (
                       <tr key={u.id} style={{ borderBottom: '1px solid #eee', opacity: u.is_active ? 1 : 0.6 }}>
+                        <td style={{ padding: '10px' }}>{u.username || '-'}</td>
                         <td style={{ padding: '10px' }}>{u.email}</td>
                         <td style={{ padding: '10px' }}>
                           <span style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '0.8em', background: u.role === 'admin' ? '#fff3cd' : '#e2e3e5' }}>{u.role}</span>
@@ -534,7 +570,19 @@ function App() {
                             {u.is_active ? 'Ativo' : 'Desativado'}
                           </span>
                         </td>
-                        <td style={{ padding: '10px' }}>
+                        <td style={{ padding: '10px', display: 'flex', gap: '10px' }}>
+                          <button 
+                            onClick={() => { 
+                              setEditingUser(u)
+                              setEditUserName(u.username || '')
+                              setEditUserEmail(u.email)
+                              setEditUserRole(u.role)
+                              setEditUserPass('')
+                            }}
+                            style={{ padding: '4px 8px', fontSize: '0.8em', cursor: 'pointer' }}
+                          >
+                            Editar
+                          </button>
                           {u.username !== 'administrador' && (
                             <button 
                               onClick={() => handleToggleUserStatus(u.id, u.is_active)} 
@@ -543,7 +591,8 @@ function App() {
                                 cursor: 'pointer', 
                                 border: 'none', 
                                 background: 'none',
-                                fontWeight: 'bold'
+                                fontWeight: 'bold',
+                                fontSize: '0.8em'
                               }}
                             >
                               {u.is_active ? 'Desativar' : 'Ativar'}
@@ -599,6 +648,39 @@ function App() {
                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
                   <button type="button" onClick={() => { setEditingLog(null); setSelectedCategoryId('') }} style={{ padding: '8px 15px' }}>Cancelar</button>
                   <button type="submit" style={{ padding: '8px 15px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Salvar</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {editingUser && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+            <div style={{ background: 'white', padding: '30px', borderRadius: '8px', minWidth: '400px' }}>
+              <h3>Editar Usuário</h3>
+              <form onSubmit={handleSaveUser}>
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9em' }}>Nome de Usuário:</label>
+                  <input type="text" value={editUserName} onChange={(e) => setEditUserName(e.target.value)} style={{ width: '100%', padding: '10px', boxSizing: 'border-box' }} placeholder="Ex: joao.silva" />
+                </div>
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9em' }}>E-mail:</label>
+                  <input type="email" value={editUserEmail} onChange={(e) => setEditUserEmail(e.target.value)} style={{ width: '100%', padding: '10px', boxSizing: 'border-box' }} required />
+                </div>
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9em' }}>Nova Senha (deixe vazio para manter):</label>
+                  <input type="password" value={editUserPass} onChange={(e) => setEditUserPass(e.target.value)} style={{ width: '100%', padding: '10px', boxSizing: 'border-box' }} placeholder="Nova senha" />
+                </div>
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9em' }}>Nível:</label>
+                  <select value={editUserRole} onChange={(e) => setEditUserRole(e.target.value)} style={{ width: '100%', padding: '10px' }}>
+                    <option value="user">Usuário (Técnico)</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                  <button type="button" onClick={() => { setEditingUser(null); setEditUserName(''); setEditUserEmail(''); setEditUserPass('') }} style={{ padding: '8px 15px' }}>Cancelar</button>
+                  <button type="submit" style={{ padding: '8px 15px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Salvar Alterações</button>
                 </div>
               </form>
             </div>

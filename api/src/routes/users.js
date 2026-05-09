@@ -1,15 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const userController = require("../controllers/users");
+const { authenticate, adminOnly } = require("../middleware/auth");
 
-// Middleware de admin simples
-const adminOnly = (req, res, next) => {
-  // Em uma app real, verificaríamos o token JWT aqui
-  next();
-};
-
-router.get("/", adminOnly, userController.listUsers);
-router.post("/", adminOnly, userController.createUser);
-router.put("/:id/toggle", adminOnly, userController.toggleUserStatus);
+router.get("/", authenticate, adminOnly, userController.listUsers);
+router.post("/", authenticate, adminOnly, userController.createUser);
+router.put("/:id", authenticate, adminOnly, userController.updateUser);
+router.put("/:id/toggle", authenticate, adminOnly, userController.toggleUserStatus);
 
 module.exports = router;
