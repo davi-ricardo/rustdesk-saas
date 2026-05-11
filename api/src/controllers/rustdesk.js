@@ -42,16 +42,16 @@ const pickFirst = (obj, paths) => {
 exports.getServerInfo = (req, res) => {
   try {
     const publicKeyPath = '/root/id_ed25519.pub';
-    let publicKey = process.env.RUSTDESK_KEY || 'Key not found';
+    let publicKey = process.env.RUSTDESK_KEY || '';
 
-    if (fs.existsSync(publicKeyPath)) {
+    if (!publicKey && fs.existsSync(publicKeyPath)) {
       publicKey = fs.readFileSync(publicKeyPath, 'utf8').trim();
     }
 
     res.json({
       idServer: process.env.ID_SERVER || '76.13.174.204',
       relayServer: process.env.RELAY_SERVER || '76.13.174.204',
-      key: publicKey
+      key: publicKey || 'Key not found'
     });
   } catch (err) {
     console.error('Error reading RustDesk key:', err);
