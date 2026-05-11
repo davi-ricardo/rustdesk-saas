@@ -68,6 +68,22 @@ const initDb = async () => {
       );
     `);
 
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS hbbr_sessions (
+        request_id VARCHAR(64) PRIMARY KEY,
+        started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        paired_at TIMESTAMP,
+        ended_at TIMESTAMP,
+        a_ip VARCHAR(45),
+        a_port INTEGER,
+        b_ip VARCHAR(45),
+        b_port INTEGER,
+        a_closed_at TIMESTAMP,
+        b_closed_at TIMESTAMP,
+        last_line TEXT
+      );
+    `);
+
     // Cria ou atualiza o administrador baseado nas variáveis de ambiente
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@test.com';
     const adminPassword = process.env.ADMIN_PASSWORD || '123';

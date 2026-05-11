@@ -39,6 +39,43 @@ const pickFirst = (obj, paths) => {
   return undefined;
 };
 
+const normalizeIp = (ip) => {
+  if (!ip) return null;
+  const s = String(ip);
+  if (s.startsWith("::ffff:")) return s.slice("::ffff:".length);
+  return s;
+};
+
+const tryParseHbbrLine = (line) => {
+  const trimmed = String(line || "").trim();
+  if (!trimmed) return null;
+
+  const requestRe = /Relayrequest\s+([0-9a-fA-F-]{8,64})\s+from\s+\[(?:[:0-9a-fA-F]*:ffff:)?([0-9.]+)\]:(\d+)\s+got paired/;
+  const newRe = /New relay request\s+([0-9a-fA-F-]{8,64})\s+from\s+\[(?:[:0-9a-fA-F]*:ffff:)?([0-9.]+)\]:(\d+)/;
+  const closedRe = /Relay of\s+\[(?:[:0-9a-fA-F]*:ffff:)?([0-9.]+)\]:(\d+)\s+closed(?:[:\s].*)?$/;
+
+  let m = trimmed.match(requestRe);
+  if (m) return { type: "paired", requestId: m[1], ip: m[2], port: parseInt(m[3], 10) };
+
+  m = trimmed.match(newRe);
+  if (m) return { type: "new", requestId: m[1], ip: m[2], port: parseInt(m[3], 10) };
+
+  m = trimmed.match(closedRe);
+  if (m) return { type: "closed", ip: m[1], port: parseInt(m[2], 10) };
+
+  return null;
+};
+
+const pickTimestampFromHbbrLine = (line) => {
+  const trimmed = String(line || "").trim();
+  const tsMatch = trimmed.match(/^\[(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2}(?:\.\d+)?)\s+([+-]\d{2}:\d{2})\]/);
+  if (!tsMatch) return null;
+  const iso = `${tsMatch[1]}T${tsMatch[2]}${tsMatch[3]}`;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d;
+};
+
 exports.getServerInfo = (req, res) => {
   return exports._getServerInfo(req, res);
 };
@@ -108,6 +145,172 @@ exports.updateServerInfo = async (req, res) => {
     console.error("Error updating server info:", err);
     return res.status(500).json({ error: "Failed to update server info" });
   }
+};
+
+exports.ingestHbbrLogs = async (req, res) => {
+  const secret = process.env.HBBR_INGEST_SECRET;
+  if (!secret) {
+    return res.status(500).json({ error: "HBBR_INGEST_SECRET not configured" });
+  }
+
+  const provided = req.headers["x-ingest-secret"];
+  if (provided !== secret) {
+    return res.status(401).json({ error: "Invalid ingest secret" });
+  }
+
+  const raw = typeof req.body === "string" ? req.body : "";
+  const lines = raw.split("\n").map(l => l.trim()).filter(Boolean);
+  if (lines.length === 0) return res.json({ status: "ok", processed: 0 });
+
+  let processed = 0;
+  let createdLogs = 0;
+
+  for (const line of lines) {
+    const parsed = tryParseHbbrLine(line);
+    if (!parsed) continue;
+
+    const ts = pickTimestampFromHbbrLine(line) || new Date();
+
+    if (parsed.type === "new" || parsed.type === "paired") {
+      const requestId = parsed.requestId;
+      const ip = normalizeIp(parsed.ip);
+      const port = parsed.port;
+
+      const existing = await db.query("SELECT * FROM hbbr_sessions WHERE request_id = $1", [requestId]);
+      if (existing.rows.length === 0) {
+        await db.query(
+          `
+          INSERT INTO hbbr_sessions (request_id, started_at, a_ip, a_port, last_line)
+          VALUES ($1, $2, $3, $4, $5)
+          `,
+          [requestId, ts, ip, port, line.slice(0, 2000)]
+        );
+        processed++;
+        continue;
+      }
+
+      const row = existing.rows[0];
+      const aIp = row.a_ip;
+      const aPort = row.a_port;
+      const bIp = row.b_ip;
+      const bPort = row.b_port;
+
+      const sameAsA = aIp === ip && Number(aPort) === Number(port);
+      const sameAsB = bIp === ip && Number(bPort) === Number(port);
+
+      let nextBIp = bIp;
+      let nextBPort = bPort;
+      if (!sameAsA && !sameAsB) {
+        nextBIp = ip;
+        nextBPort = port;
+      }
+
+      const pairedAt = parsed.type === "paired" ? ts : row.paired_at;
+
+      await db.query(
+        `
+        UPDATE hbbr_sessions
+        SET b_ip = $2,
+            b_port = $3,
+            paired_at = COALESCE($4, paired_at),
+            last_line = $5
+        WHERE request_id = $1
+        `,
+        [requestId, nextBIp, nextBPort, pairedAt, line.slice(0, 2000)]
+      );
+
+      processed++;
+      continue;
+    }
+
+    if (parsed.type === "closed") {
+      const ip = normalizeIp(parsed.ip);
+      const port = parsed.port;
+
+      const match = await db.query(
+        `
+        SELECT * FROM hbbr_sessions
+        WHERE (a_ip = $1 AND a_port = $2) OR (b_ip = $1 AND b_port = $2)
+        ORDER BY started_at DESC
+        LIMIT 1
+        `,
+        [ip, port]
+      );
+      if (match.rows.length === 0) continue;
+
+      const sess = match.rows[0];
+      const requestId = sess.request_id;
+      const isA = sess.a_ip === ip && Number(sess.a_port) === Number(port);
+      const isB = sess.b_ip === ip && Number(sess.b_port) === Number(port);
+
+      const updateFields = [];
+      const params = [requestId];
+      let idx = 2;
+
+      if (isA && !sess.a_closed_at) {
+        updateFields.push(`a_closed_at = $${idx++}`);
+        params.push(ts);
+      }
+      if (isB && !sess.b_closed_at) {
+        updateFields.push(`b_closed_at = $${idx++}`);
+        params.push(ts);
+      }
+
+      updateFields.push(`ended_at = $${idx++}`);
+      params.push(ts);
+      updateFields.push(`last_line = $${idx++}`);
+      params.push(line.slice(0, 2000));
+
+      await db.query(
+        `
+        UPDATE hbbr_sessions
+        SET ${updateFields.join(", ")}
+        WHERE request_id = $1
+        `,
+        params
+      );
+
+      const start = sess.started_at ? new Date(sess.started_at) : null;
+      const end = ts;
+      const durationSeconds = start ? Math.max(0, Math.round((end.getTime() - start.getTime()) / 1000)) : 0;
+
+      const pickDeviceByIp = async (ipAddr) => {
+        if (!ipAddr) return null;
+        const resDev = await db.query(
+          `
+          SELECT device_id
+          FROM devices
+          WHERE ip_address = $1 OR ip_address = $2
+          ORDER BY last_seen DESC
+          LIMIT 1
+          `,
+          [ipAddr, `::ffff:${ipAddr}`]
+        );
+        return resDev.rows[0]?.device_id || null;
+      };
+
+      const aDevice = await pickDeviceByIp(sess.a_ip);
+      const bDevice = await pickDeviceByIp(sess.b_ip);
+
+      if (aDevice && bDevice) {
+        const already = await db.query("SELECT 1 FROM connection_logs WHERE from_device_id = $1 AND to_device_id = $2 AND timestamp = $3 LIMIT 1", [aDevice, bDevice, end]);
+        if (already.rows.length === 0) {
+          await db.query(
+            `
+            INSERT INTO connection_logs (from_device_id, to_device_id, action, timestamp, duration)
+            VALUES ($1, $2, 'end', $3, $4)
+            `,
+            [aDevice, bDevice, end, durationSeconds]
+          );
+          createdLogs++;
+        }
+      }
+
+      processed++;
+    }
+  }
+
+  return res.json({ status: "ok", processed, createdLogs });
 };
 
 exports.clientLogin = (req, res) => {
