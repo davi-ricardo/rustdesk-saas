@@ -20,6 +20,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.text({ type: ["text/*", "application/octet-stream"] }));
 
+if (process.env.LOG_REQUESTS === "1") {
+  app.use((req, res, next) => {
+    const ct = req.headers["content-type"] || "";
+    const cl = req.headers["content-length"] || "";
+    console.log(`[REQ] ${req.method} ${req.path} ct=${ct} len=${cl}`);
+    next();
+  });
+}
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api", rustdeskRoutes);
