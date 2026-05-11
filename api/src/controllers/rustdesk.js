@@ -144,9 +144,11 @@ exports.saveAlias = async (req, res) => {
 exports.logConnection = async (req, res) => {
   // Log para depuração na VPS
   const body = normalizeBody(req.body);
-  console.log("Log de conexão recebido:", JSON.stringify(body));
+  const queryBody = req.query && typeof req.query === "object" ? req.query : {};
+  const merged = { ...queryBody, ...body };
+  console.log("Log de conexão recebido:", JSON.stringify({ path: req.path, body: merged }));
   
-  const final_from = pickFirst(body, [
+  const final_from = pickFirst(merged, [
     "from_device_id",
     "from",
     "src_id",
@@ -162,7 +164,7 @@ exports.logConnection = async (req, res) => {
     "data.id"
   ]);
 
-  const final_to = pickFirst(body, [
+  const final_to = pickFirst(merged, [
     "to_device_id",
     "to",
     "dst_id",
@@ -179,7 +181,7 @@ exports.logConnection = async (req, res) => {
     "data.peer_id"
   ]);
 
-  const final_action = pickFirst(body, [
+  const final_action = pickFirst(merged, [
     "action",
     "type",
     "event",
@@ -188,17 +190,20 @@ exports.logConnection = async (req, res) => {
     "data.event"
   ]);
 
-  const duration = pickFirst(body, ["duration", "data.duration"]);
+  const duration = pickFirst(merged, ["duration", "data.duration", "seconds", "data.seconds"]);
 
   if (!final_from || !final_to) {
     return res.json({ status: "ok" }); // Retorna ok para o client
   }
 
   try {
-    await db.query(`
+    await db.query(
+      `
       INSERT INTO connection_logs (from_device_id, to_device_id, action, duration)
       VALUES ($1, $2, $3, $4)
-    `, [final_from, final_to, final_action, duration || 0]);
+      `,
+      [String(final_from), String(final_to), final_action ? String(final_action) : null, duration ? parseInt(duration, 10) || 0 : 0]
+    );
     res.json({ status: "ok" });
   } catch (err) {
     console.error("Error logging connection:", err);

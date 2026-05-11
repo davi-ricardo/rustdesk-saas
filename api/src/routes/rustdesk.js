@@ -20,5 +20,14 @@ router.post("/heartbeat", rustdeskController.heartbeat);
 router.post("/log", rustdeskController.logConnection);
 router.post("/audit", rustdeskController.logConnection); // Alias comum em algumas versões
 router.post("/audit/log", rustdeskController.logConnection); // Outro alias comum
+router.post("/connection", rustdeskController.logConnection);
+router.post("/connection/log", rustdeskController.logConnection);
+router.post("/connect", rustdeskController.logConnection);
+router.post("/conn", rustdeskController.logConnection);
+router.post("/conn/log", rustdeskController.logConnection);
+router.post("/session", rustdeskController.logConnection);
+router.post("/session/log", rustdeskController.logConnection);
+router.post("/session/start", rustdeskController.logConnection);
+router.post("/session/end", rustdeskController.logConnection);
 
 module.exports = router;
