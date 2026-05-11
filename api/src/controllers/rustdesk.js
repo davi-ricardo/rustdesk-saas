@@ -2,6 +2,43 @@ const fs = require('fs');
 const XLSX = require('xlsx');
 const db = require("../db");
 
+const parseMaybeJson = (value) => {
+  if (value && typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+      try {
+        return JSON.parse(trimmed);
+      } catch (e) {
+        return value;
+      }
+    }
+  }
+  return value;
+};
+
+const normalizeBody = (body) => {
+  const parsed = parseMaybeJson(body);
+  if (parsed && typeof parsed === "object") return parsed;
+  return {};
+};
+
+const pickFirst = (obj, paths) => {
+  for (const path of paths) {
+    const parts = path.split(".");
+    let cur = obj;
+    let ok = true;
+    for (const part of parts) {
+      if (!cur || typeof cur !== "object" || !(part in cur)) {
+        ok = false;
+        break;
+      }
+      cur = cur[part];
+    }
+    if (ok && cur !== undefined && cur !== null && cur !== "") return cur;
+  }
+  return undefined;
+};
+
 exports.getServerInfo = (req, res) => {
   try {
     const publicKeyPath = '/root/id_ed25519.pub';
@@ -32,11 +69,12 @@ exports.clientLogin = (req, res) => {
 
 exports.heartbeat = async (req, res) => {
   // Log para depuração na VPS (docker logs rustdesk-saas-api-1)
-  console.log("Heartbeat recebido:", JSON.stringify(req.body));
+  const body = normalizeBody(req.body);
+  console.log("Heartbeat recebido:", JSON.stringify(body));
   
   // O RustDesk Client pode enviar os dados de formas diferentes
-  const { id, uuid, username, hostname, os } = req.body;
-  const device_id = id || req.body.device_id;
+  const { id, uuid, username, hostname, os } = body;
+  const device_id = id || body.device_id;
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
   if (!device_id) {
@@ -105,15 +143,52 @@ exports.saveAlias = async (req, res) => {
 // Connection Logs - Capturar eventos
 exports.logConnection = async (req, res) => {
   // Log para depuração na VPS
-  console.log("Log de conexão recebido:", JSON.stringify(req.body));
+  const body = normalizeBody(req.body);
+  console.log("Log de conexão recebido:", JSON.stringify(body));
   
-  // O RustDesk pode enviar no body ou como campos soltos
-  const { from_device_id, to_device_id, action, duration, id, target_id, type } = req.body;
-  
-  // Mapeia os diferentes formatos possíveis do RustDesk
-  const final_from = from_device_id || id;
-  const final_to = to_device_id || target_id;
-  const final_action = action || type;
+  const final_from = pickFirst(body, [
+    "from_device_id",
+    "from",
+    "src_id",
+    "source_id",
+    "source",
+    "client_id",
+    "id",
+    "data.from_device_id",
+    "data.from",
+    "data.src_id",
+    "data.source_id",
+    "data.client_id",
+    "data.id"
+  ]);
+
+  const final_to = pickFirst(body, [
+    "to_device_id",
+    "to",
+    "dst_id",
+    "dest_id",
+    "target_id",
+    "target",
+    "peer_id",
+    "data.to_device_id",
+    "data.to",
+    "data.dst_id",
+    "data.dest_id",
+    "data.target_id",
+    "data.target",
+    "data.peer_id"
+  ]);
+
+  const final_action = pickFirst(body, [
+    "action",
+    "type",
+    "event",
+    "data.action",
+    "data.type",
+    "data.event"
+  ]);
+
+  const duration = pickFirst(body, ["duration", "data.duration"]);
 
   if (!final_from || !final_to) {
     return res.json({ status: "ok" }); // Retorna ok para o client

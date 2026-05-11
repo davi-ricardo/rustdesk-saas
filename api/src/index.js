@@ -17,6 +17,8 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.text({ type: ["text/*", "application/octet-stream"] }));
 
 // Routes
 app.use("/api/auth", authRoutes);
