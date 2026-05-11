@@ -318,6 +318,87 @@ exports.exportXLS = async (req, res) => {
   }
 };
 
+exports.sysinfo = async (req, res) => {
+  const body = normalizeBody(req.body);
+  console.log("Sysinfo recebido:", JSON.stringify(body));
+
+  const device_id = pickFirst(body, ["id", "device_id", "data.id", "data.device_id"]);
+  const uuid = pickFirst(body, ["uuid", "data.uuid"]);
+  const username = pickFirst(body, ["username", "user", "data.username", "data.user"]);
+  const hostname = pickFirst(body, ["hostname", "host", "data.hostname", "data.host"]);
+  const os = pickFirst(body, ["os", "platform", "data.os", "data.platform"]);
+  const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+
+  try {
+    if (device_id) {
+      await db.query(
+        `
+        INSERT INTO devices (device_id, uuid, username, hostname, ip_address, os, last_seen)
+        VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
+        ON CONFLICT (device_id) DO UPDATE SET
+          uuid = COALESCE(EXCLUDED.uuid, devices.uuid),
+          username = COALESCE(EXCLUDED.username, devices.username),
+          hostname = COALESCE(EXCLUDED.hostname, devices.hostname),
+          ip_address = COALESCE(EXCLUDED.ip_address, devices.ip_address),
+          os = COALESCE(EXCLUDED.os, devices.os),
+          last_seen = CURRENT_TIMESTAMP
+        `,
+        [String(device_id), uuid ? String(uuid) : null, username ? String(username) : null, hostname ? String(hostname) : null, ip ? String(ip) : null, os ? String(os) : null]
+      );
+    }
+
+    const final_from = pickFirst(body, [
+      "from_device_id",
+      "from",
+      "src_id",
+      "source_id",
+      "source",
+      "client_id",
+      "data.from_device_id",
+      "data.from",
+      "data.src_id",
+      "data.source_id",
+      "data.client_id"
+    ]);
+
+    const final_to = pickFirst(body, [
+      "to_device_id",
+      "to",
+      "dst_id",
+      "dest_id",
+      "target_id",
+      "target",
+      "peer_id",
+      "data.to_device_id",
+      "data.to",
+      "data.dst_id",
+      "data.dest_id",
+      "data.target_id",
+      "data.target",
+      "data.peer_id"
+    ]);
+
+    const final_action = pickFirst(body, ["action", "type", "event", "data.action", "data.type", "data.event"]);
+    const duration = pickFirst(body, ["duration", "seconds", "data.duration", "data.seconds"]);
+
+    if (final_from && final_to) {
+      await db.query(
+        `
+        INSERT INTO connection_logs (from_device_id, to_device_id, action, duration)
+        VALUES ($1, $2, $3, $4)
+        `,
+        [String(final_from), String(final_to), final_action ? String(final_action) : null, duration ? parseInt(duration, 10) || 0 : 0]
+      );
+      console.log("Sysinfo gerou log de conexão:", JSON.stringify({ from: final_from, to: final_to, action: final_action, duration }));
+    }
+
+    return res.json({ status: "ok" });
+  } catch (err) {
+    console.error("Erro ao processar sysinfo:", err);
+    return res.status(500).json({ status: "error" });
+  }
+};
+
 // --- ENDPOINTS PARA O RUSTDESK CLIENT (Sincronização do Livro de Endereços) ---
 
 exports.getAb = async (req, res) => {
