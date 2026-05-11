@@ -60,6 +60,14 @@ const initDb = async () => {
       await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true");
     } catch (e) {}
     
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS app_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     // Cria ou atualiza o administrador baseado nas variáveis de ambiente
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@test.com';
     const adminPassword = process.env.ADMIN_PASSWORD || '123';

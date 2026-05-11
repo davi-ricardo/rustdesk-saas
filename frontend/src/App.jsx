@@ -9,6 +9,10 @@ function App() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [serverInfo, setServerInfo] = useState(null)
+  const [editingServerInfo, setEditingServerInfo] = useState(false)
+  const [editIdServer, setEditIdServer] = useState('')
+  const [editRelayServer, setEditRelayServer] = useState('')
+  const [editRustdeskKey, setEditRustdeskKey] = useState('')
   const [devices, setDevices] = useState([])
   const [reports, setReports] = useState([])
   const [users, setUsers] = useState([])
@@ -44,7 +48,26 @@ function App() {
     try {
       const response = await api.get('/api/server-info')
       setServerInfo(response.data)
+      if (!editingServerInfo) {
+        setEditIdServer(response.data?.idServer || '')
+        setEditRelayServer(response.data?.relayServer || '')
+        setEditRustdeskKey(response.data?.key || '')
+      }
     } catch (err) { console.error('Erro ao buscar info do servidor') }
+  }
+
+  const handleSaveServerInfo = async (e) => {
+    e.preventDefault()
+    try {
+      await api.put('/api/server-info', {
+        idServer: editIdServer,
+        relayServer: editRelayServer,
+        key: editRustdeskKey
+      })
+      setEditingServerInfo(false)
+      fetchServerInfo()
+      alert('Configurações atualizadas!')
+    } catch (err) { alert('Erro ao atualizar configurações') }
   }
 
   const fetchDevices = async () => {
@@ -303,10 +326,54 @@ function App() {
           {activeTab === 'devices' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 3fr', gap: '20px' }}>
               <div style={{ background: '#f8f9fa', padding: '20px', borderRadius: '8px', border: '1px solid #dee2e6' }}>
-                <h3 style={{ marginTop: 0 }}>Configurações VPS</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 style={{ marginTop: 0, marginBottom: '10px' }}>Configurações VPS</h3>
+                  {currentUser?.role === 'admin' && (
+                    <button
+                      onClick={() => {
+                        if (editingServerInfo) {
+                          setEditingServerInfo(false)
+                          setEditIdServer(serverInfo?.idServer || '')
+                          setEditRelayServer(serverInfo?.relayServer || '')
+                          setEditRustdeskKey(serverInfo?.key || '')
+                        } else {
+                          setEditingServerInfo(true)
+                        }
+                      }}
+                      style={{ padding: '6px 10px', cursor: 'pointer', borderRadius: '4px', border: '1px solid #ccc' }}
+                    >
+                      {editingServerInfo ? 'Cancelar' : 'Editar'}
+                    </button>
+                  )}
+                </div>
                 <div style={{ textAlign: 'left', background: '#fff', padding: '15px', borderRadius: '4px', border: '1px solid #e9ecef' }}>
-                  <p style={{ margin: '5px 0' }}><strong>IP Server:</strong><br /> <code style={{ color: '#d63384' }}>{serverInfo?.idServer}</code></p>
-                  <p style={{ margin: '15px 0 5px 0' }}><strong>Key:</strong><br /> <code style={{ wordBreak: 'break-all', fontSize: '0.85em', color: '#d63384' }}>{serverInfo?.key}</code></p>
+                  {!editingServerInfo && (
+                    <>
+                      <p style={{ margin: '5px 0' }}><strong>ID Server:</strong><br /> <code style={{ color: '#d63384' }}>{serverInfo?.idServer}</code></p>
+                      <p style={{ margin: '15px 0 5px 0' }}><strong>Relay Server:</strong><br /> <code style={{ color: '#d63384' }}>{serverInfo?.relayServer}</code></p>
+                      <p style={{ margin: '15px 0 5px 0' }}><strong>Key:</strong><br /> <code style={{ wordBreak: 'break-all', fontSize: '0.85em', color: '#d63384' }}>{serverInfo?.key}</code></p>
+                    </>
+                  )}
+
+                  {editingServerInfo && currentUser?.role === 'admin' && (
+                    <form onSubmit={handleSaveServerInfo} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9em' }}>ID Server:</label>
+                        <input value={editIdServer} onChange={(e) => setEditIdServer(e.target.value)} style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9em' }}>Relay Server:</label>
+                        <input value={editRelayServer} onChange={(e) => setEditRelayServer(e.target.value)} style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9em' }}>Key:</label>
+                        <textarea value={editRustdeskKey} onChange={(e) => setEditRustdeskKey(e.target.value)} style={{ width: '100%', padding: '8px', boxSizing: 'border-box', minHeight: '80px' }} />
+                      </div>
+                      <button type="submit" style={{ padding: '10px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                        Salvar
+                      </button>
+                    </form>
+                  )}
                 </div>
               </div>
               <div>

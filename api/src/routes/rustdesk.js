@@ -1,12 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const rustdeskController = require("../controllers/rustdesk");
+const { authenticate, adminOnly } = require("../middleware/auth");
 
 const authMiddleware = (req, res, next) => {
   next();
 };
 
 router.get("/server-info", authMiddleware, rustdeskController.getServerInfo);
+router.put("/server-info", authenticate, adminOnly, rustdeskController.updateServerInfo);
 router.get("/devices", authMiddleware, rustdeskController.getDevices);
 router.post("/alias", authMiddleware, rustdeskController.saveAlias);
 router.get("/reports", authMiddleware, rustdeskController.getReports);

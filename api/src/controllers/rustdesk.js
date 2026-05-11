@@ -40,22 +40,73 @@ const pickFirst = (obj, paths) => {
 };
 
 exports.getServerInfo = (req, res) => {
+  return exports._getServerInfo(req, res);
+};
+
+exports._getServerInfo = async (req, res) => {
   try {
     const publicKeyPath = '/root/id_ed25519.pub';
-    let publicKey = process.env.RUSTDESK_KEY || '';
 
+    const settingsResult = await db.query(
+      "SELECT key, value FROM app_settings WHERE key IN ('id_server', 'relay_server', 'rustdesk_key')"
+    );
+    const settings = new Map(settingsResult.rows.map(r => [r.key, r.value]));
+
+    const idServer = (settings.get("id_server") || process.env.ID_SERVER || '76.13.174.204').trim();
+    const relayServer = (settings.get("relay_server") || process.env.RELAY_SERVER || idServer).trim();
+
+    let publicKey = (settings.get("rustdesk_key") || process.env.RUSTDESK_KEY || '').trim();
     if (!publicKey && fs.existsSync(publicKeyPath)) {
       publicKey = fs.readFileSync(publicKeyPath, 'utf8').trim();
     }
 
-    res.json({
-      idServer: process.env.ID_SERVER || '76.13.174.204',
-      relayServer: process.env.RELAY_SERVER || '76.13.174.204',
+    return res.json({
+      idServer,
+      relayServer,
       key: publicKey || 'Key not found'
     });
   } catch (err) {
     console.error('Error reading RustDesk key:', err);
-    res.status(500).json({ error: 'Failed to get server info' });
+    return res.status(500).json({ error: 'Failed to get server info' });
+  }
+};
+
+exports.updateServerInfo = async (req, res) => {
+  const idServerRaw = req.body?.idServer;
+  const relayServerRaw = req.body?.relayServer;
+  const keyRaw = req.body?.key;
+
+  const idServer = typeof idServerRaw === "string" ? idServerRaw.trim() : undefined;
+  const relayServer = typeof relayServerRaw === "string" ? relayServerRaw.trim() : undefined;
+  const key = typeof keyRaw === "string" ? keyRaw.trim() : undefined;
+
+  try {
+    const allowedEmpty = (v) => v === undefined || v.length > 0;
+    if (!allowedEmpty(idServer) || !allowedEmpty(relayServer) || !allowedEmpty(key)) {
+      return res.status(400).json({ error: "Invalid payload" });
+    }
+
+    const upsert = async (k, v) => {
+      await db.query(
+        `
+        INSERT INTO app_settings (key, value, updated_at)
+        VALUES ($1, $2, CURRENT_TIMESTAMP)
+        ON CONFLICT (key) DO UPDATE SET
+          value = EXCLUDED.value,
+          updated_at = CURRENT_TIMESTAMP
+        `,
+        [k, v]
+      );
+    };
+
+    if (idServer !== undefined) await upsert("id_server", idServer);
+    if (relayServer !== undefined) await upsert("relay_server", relayServer);
+    if (key !== undefined) await upsert("rustdesk_key", key);
+
+    return exports._getServerInfo(req, res);
+  } catch (err) {
+    console.error("Error updating server info:", err);
+    return res.status(500).json({ error: "Failed to update server info" });
   }
 };
 
