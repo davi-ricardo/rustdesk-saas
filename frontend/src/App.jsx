@@ -102,7 +102,9 @@ function App() {
     try {
       const response = await api.get('/api/service-categories')
       setServiceCategories(response.data)
-    } catch (err) { console.error('Erro ao buscar categorias de serviço') }
+    } catch (err) { 
+      console.error('Erro detalhado ao buscar categorias:', err)
+    }
   }
 
   const handleCreateCategory = async (e) => {
@@ -117,7 +119,10 @@ function App() {
       setNewCategoryDesc('')
       setEditingCategory(null)
       fetchServiceCategories()
-    } catch (err) { alert('Erro ao gerenciar categoria') }
+    } catch (err) { 
+      console.error('Erro detalhado:', err)
+      alert('Erro ao gerenciar categoria: ' + (err.response?.data?.error || err.message)) 
+    }
   }
 
   const handleDeleteCategory = async (id) => {
@@ -125,7 +130,10 @@ function App() {
     try {
       await api.delete(`/api/service-categories/${id}`)
       fetchServiceCategories()
-    } catch (err) { alert('Erro ao excluir categoria') }
+    } catch (err) { 
+      console.error('Erro detalhado:', err)
+      alert('Erro ao excluir categoria: ' + (err.response?.data?.error || err.message)) 
+    }
   }
 
   const handleSaveLogCategory = async (e) => {

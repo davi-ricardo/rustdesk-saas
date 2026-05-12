@@ -1,26 +1,29 @@
 services:
-  # hbbs e hbbr comentados pois já rodam nativamente na VPS
-  # hbbs:
-  #   image: rustdesk/rustdesk-server
-  #   command: hbbs -r hbbr:21117
-  #   volumes:
-  #     - ./data:/root
-  #   ports:
-  #     - "21115:21115"
-  #     - "21116:21116"
-  #     - "21116:21116/udp"
-  #     - "21118:21118"
+  hbbs:
+    image: rustdesk/rustdesk-server:latest
+    restart: unless-stopped
+    command: hbbs -r hbbr:21117
+    environment:
+      ALWAYS_USE_RELAY: "Y"
+    volumes:
+      - rustdesk_server_data:/root
+    ports:
+      - "21115:21115"
+      - "21116:21116"
+      - "21116:21116/udp"
+      - "21118:21118"
 
-  # hbbr:
-  #   image: rustdesk/rustdesk-server
-  #   command: hbbr
-  #   volumes:
-  #     - ./data:/root
-  #   ports:
-  #     - "21117:21117"
-  #     - "21119:21119"
+  hbbr:
+    image: rustdesk/rustdesk-server:latest
+    restart: unless-stopped
+    command: hbbr
+    volumes:
+      - rustdesk_server_data:/root
+    ports:
+      - "21117:21117"
+      - "21119:21119"
 
-  postgres:
+  postgresdb:
     image: postgres:15
     restart: always
     environment:
@@ -28,20 +31,20 @@ services:
       POSTGRES_PASSWORD: rustdesk123
       POSTGRES_DB: rustdesk
     volumes:
-      - ./pgdata:/var/lib/postgresql/data
+      - ./pgdata_new:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
   api:
     build: ./api
     depends_on:
-      - postgres
+      - postgresdb
     environment:
-      DATABASE_URL: postgres://rustdesk:rustdesk123@postgres:5432/rustdesk
+      DATABASE_URL: postgres://rustdesk:rustdesk123@postgresdb:5432/rustdesk
       JWT_SECRET: supersecretkey
       ID_SERVER: "76.13.174.204"
       RELAY_SERVER: "76.13.174.204"
-      RUSTDESK_KEY: "FiClwwg0SMw4aI3SAD1kyfzZFTWjb5nmD50q"
+      RUSTDESK_KEY: "FiClwwg0SMw4aI3SAD1kyfzZFTWjb5nmD50q+8622JY="
       ADMIN_EMAIL: "administrador"
       ADMIN_PASSWORD: "tipref#2026"
     ports:
@@ -55,3 +58,6 @@ services:
     build: ./frontend
     ports:
       - "8080:80"
+
+volumes:
+  rustdesk_server_data:
