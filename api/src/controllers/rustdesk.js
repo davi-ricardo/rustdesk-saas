@@ -163,16 +163,21 @@ exports.logConnection = async (req, res) => {
     final_duration 
   });
 
-  if (!final_from || !final_to || !final_action) {
-    console.log("[LOG] Faltando campos, não salvando log.");
+  // Se só tiver um ID, usamos ele como um e o outro como null
+  if (!final_action) {
+    console.log("[LOG] Faltando ação, não salvando log.");
     return res.json({ status: "ok" }); // Retorna ok para o client não reclamar
   }
+
+  // Se não tiver from ou to, usamos null para o que faltar
+  const save_from = final_from || null;
+  const save_to = final_to || null;
 
   try {
     await db.query(`
       INSERT INTO connection_logs (from_device_id, to_device_id, action, duration)
       VALUES ($1, $2, $3, $4)
-    `, [final_from, final_to, final_action, final_duration]);
+    `, [save_from, save_to, final_action, final_duration]);
     console.log("[LOG] Log salvo com sucesso no banco!");
     res.json({ status: "ok" });
   } catch (err) {
@@ -203,11 +208,11 @@ exports.getReports = async (req, res) => {
       LIMIT 100
     `);
     
-    // Formata o retorno para usar alias, se existir, senão username@hostname
+    // Formata o retorno para usar alias, se existir, senão username@hostname, senão o ID RustDesk
     const formatted = result.rows.map(row => ({
       ...row,
-      from_alias: row.from_alias || (row.from_username && row.from_hostname ? `${row.from_username}@${row.from_hostname}` : row.from_device_id),
-      to_alias: row.to_alias || (row.to_username && row.to_hostname ? `${row.to_username}@${row.to_hostname}` : row.to_device_id)
+      from_alias: row.from_alias || (row.from_username && row.from_hostname ? `${row.from_username}@${row.from_hostname}` : (row.from_device_id || 'Desconhecido')),
+      to_alias: row.to_alias || (row.to_username && row.to_hostname ? `${row.to_username}@${row.to_hostname}` : (row.to_device_id || 'Desconhecido'))
     }));
     
     res.json(formatted);
