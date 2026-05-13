@@ -104,25 +104,64 @@ exports.saveAlias = async (req, res) => {
 // Connection Logs - Capturar eventos
 exports.logConnection = async (req, res) => {
   // Log para depuração na VPS
-  console.log("Log de conexão recebido:", JSON.stringify(req.body));
+  console.log("Log de conexão recebido (body completo):", JSON.stringify(req.body));
   
-  // O RustDesk pode enviar no body ou como campos soltos
-  const { from_device_id, to_device_id, action, duration, id, target_id, type } = req.body;
+  // Captura MUITOS formatos possíveis que o RustDesk pode enviar
+  const body = req.body;
   
-  // Mapeia os diferentes formatos possíveis do RustDesk
-  const final_from = from_device_id || id;
-  const final_to = to_device_id || target_id;
-  const final_action = action || type;
+  // Tenta encontrar o dispositivo de origem (técnico)
+  const final_from = 
+    body.from_device_id || 
+    body.from_id || 
+    body.src_id || 
+    body.source_id || 
+    body.id || 
+    body.from ||
+    body.peer_id;
+  
+  // Tenta encontrar o dispositivo de destino (cliente)
+  const final_to = 
+    body.to_device_id || 
+    body.to_id || 
+    body.dst_id || 
+    body.target_id || 
+    body.target ||
+    body.to ||
+    body.remote_id;
+  
+  // Tenta encontrar a ação
+  const final_action = 
+    body.action || 
+    body.type || 
+    body.event ||
+    (body.connected ? 'start' : null) ||
+    (body.disconnected ? 'end' : null);
+  
+  // Tenta encontrar a duração
+  const final_duration = 
+    body.duration || 
+    body.seconds ||
+    body.time ||
+    0;
 
-  if (!final_from || !final_to) {
-    return res.json({ status: "ok" }); // Retorna ok para o client
+  // Log para depuração
+  console.log("Log processado:", { 
+    final_from, 
+    final_to, 
+    final_action, 
+    final_duration 
+  });
+
+  if (!final_from || !final_to || !final_action) {
+    return res.json({ status: "ok" }); // Retorna ok para o client não reclamar
   }
 
   try {
     await db.query(`
       INSERT INTO connection_logs (from_device_id, to_device_id, action, duration)
       VALUES ($1, $2, $3, $4)
-    `, [final_from, final_to, final_action, duration || 0]);
+    `, [final_from, final_to, final_action, final_duration]);
+    console.log("Log salvo com sucesso no banco!");
     res.json({ status: "ok" });
   } catch (err) {
     console.error("Error logging connection:", err);
@@ -137,15 +176,29 @@ exports.getReports = async (req, res) => {
       SELECT cl.*, 
              f.alias as from_alias, 
              t.alias as to_alias,
-             sc.name as category_name
+             sc.name as category_name,
+             fd.username as from_username,
+             fd.hostname as from_hostname,
+             td.username as to_username,
+             td.hostname as to_hostname
       FROM connection_logs cl
       LEFT JOIN address_book f ON cl.from_device_id = f.device_id
       LEFT JOIN address_book t ON cl.to_device_id = t.device_id
+      LEFT JOIN devices fd ON cl.from_device_id = fd.device_id
+      LEFT JOIN devices td ON cl.to_device_id = td.device_id
       LEFT JOIN service_categories sc ON cl.category_id = sc.id
       ORDER BY cl.timestamp DESC
       LIMIT 100
     `);
-    res.json(result.rows);
+    
+    // Formata o retorno para usar alias, se existir, senão username@hostname
+    const formatted = result.rows.map(row => ({
+      ...row,
+      from_alias: row.from_alias || (row.from_username && row.from_hostname ? `${row.from_username}@${row.from_hostname}` : row.from_device_id),
+      to_alias: row.to_alias || (row.to_username && row.to_hostname ? `${row.to_username}@${row.to_hostname}` : row.to_device_id)
+    }));
+    
+    res.json(formatted);
   } catch (err) {
     console.error("Error fetching reports:", err);
     res.status(500).json({ error: "Failed to fetch reports" });
