@@ -155,6 +155,11 @@ exports.logConnection = async (req, res) => {
     (body.status === 'connected' ? 'start' : null) ||
     (body.status === 'disconnected' ? 'end' : null);
   
+  // Se tem peer, assume que é "start"
+  if (body.peer && Array.isArray(body.peer) && body.peer.length >= 1) {
+    final_action = 'start';
+  }
+  
   // Se ação é "new", assume que é "start"
   if (final_action === 'new') {
     final_action = 'start';
@@ -291,7 +296,15 @@ exports.logConnection = async (req, res) => {
 exports.getReports = async (req, res) => {
   try {
     const result = await db.query(`
-      SELECT cl.*, 
+      SELECT cl.id, 
+             cl.from_device_id, 
+             cl.to_device_id, 
+             cl.action, 
+             cl.duration, 
+             cl.timestamp AT TIME ZONE 'America/Cuiaba' as timestamp,
+             cl.category_id,
+             cl.conn_id,
+             cl.session_id,
              f.alias as from_alias, 
              t.alias as to_alias,
              sc.name as category_name,
