@@ -23,8 +23,9 @@ router.post("/heartbeat", rustdeskController.heartbeat);
 router.post("/sysinfo", rustdeskController.sysinfo);
 router.post("/info", rustdeskController.sysinfo);
 router.post("/log", rustdeskController.logConnection);
-router.post("/audit", rustdeskController.logConnection); // Alias comum em algumas versões
-router.post("/audit/log", rustdeskController.logConnection); // Outro alias comum
+router.post("/audit", rustdeskController.logConnection);
+router.post("/audit/log", rustdeskController.logConnection);
+router.post("/audit/conn", rustdeskController.logConnection); // A rota que o RustDesk está usando!
 router.post("/connection", rustdeskController.logConnection);
 router.post("/connection/log", rustdeskController.logConnection);
 router.post("/connect", rustdeskController.logConnection);
@@ -34,5 +35,7 @@ router.post("/session", rustdeskController.logConnection);
 router.post("/session/log", rustdeskController.logConnection);
 router.post("/session/start", rustdeskController.logConnection);
 router.post("/session/end", rustdeskController.logConnection);
+router.post("/conn/start", rustdeskController.logConnection);
+router.post("/conn/end", rustdeskController.logConnection);
 
 module.exports = router;
