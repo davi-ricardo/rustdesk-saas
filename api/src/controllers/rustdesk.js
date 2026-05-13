@@ -430,8 +430,7 @@ exports.ingestHbbrLogs = async (req, res) => {
   try {
     console.log("=" .repeat(60));
     console.log("[LOG] HBBR logs received!");
-    console.log("[LOG] Body completo (raw):", JSON.stringify(req.body, null, 2));
-    console.log("[LOG] Chaves do body:", Object.keys(req.body));
+    console.log("[LOG] Body completo (raw):", req.body);
     console.log("=" .repeat(60));
     res.json({ status: "ok" });
   } catch (err) {
