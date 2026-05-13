@@ -296,15 +296,8 @@ exports.logConnection = async (req, res) => {
 exports.getReports = async (req, res) => {
   try {
     const result = await db.query(`
-      SELECT cl.id, 
-             cl.from_device_id, 
-             cl.to_device_id, 
-             cl.action, 
-             cl.duration, 
+      SELECT cl.*, 
              cl.timestamp AT TIME ZONE 'America/Cuiaba' as timestamp,
-             cl.category_id,
-             cl.conn_id,
-             cl.session_id,
              f.alias as from_alias, 
              t.alias as to_alias,
              sc.name as category_name,
