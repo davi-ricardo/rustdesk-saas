@@ -224,6 +224,7 @@ exports.logConnection = async (req, res) => {
 
       // Se encontrou o log de start
       if (startLog) {
+        console.log("[LOG] Log de start encontrado:", startLog);
         // Usa os from e to do log de start
         if (!save_from) {
           save_from = startLog.from_device_id;
@@ -237,6 +238,8 @@ exports.logConnection = async (req, res) => {
         calculatedDuration = Math.floor((endDate - startDate) / 1000);
         console.log("[LOG] Duração calculada automaticamente:", calculatedDuration, "segundos");
         console.log("[LOG] Usando from e to do log de start:", { save_from, save_to });
+      } else {
+        console.log("[LOG] Nenhum log de start encontrado para conn_id:", conn_id, "session_id:", session_id);
       }
     } catch (err) {
       console.error("[LOG] Erro ao calcular duração automaticamente:", err);
