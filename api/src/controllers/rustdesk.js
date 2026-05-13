@@ -224,11 +224,32 @@ exports.getReports = async (req, res) => {
     `);
     
     // Formata o retorno para usar alias, se existir, senão username@hostname, senão o ID RustDesk
-    const formatted = result.rows.map(row => ({
-      ...row,
-      from_alias: row.from_alias || (row.from_username && row.from_hostname ? `${row.from_username}@${row.from_hostname}` : (row.from_device_id || 'Desconhecido')),
-      to_alias: row.to_alias || (row.to_username && row.to_hostname ? `${row.to_username}@${row.to_hostname}` : (row.to_device_id || 'Desconhecido'))
-    }));
+    const formatted = result.rows.map(row => {
+      // Converte o timestamp para America/Cuiaba
+      let formattedTimestamp = row.timestamp;
+      if (row.timestamp) {
+        const date = new Date(row.timestamp);
+        // Subtrai 4 horas para chegar ao timezone de Cuiabá (UTC-4)
+        date.setHours(date.getHours() - 4);
+        formattedTimestamp = date;
+      }
+
+      // Formata o tempo de duração
+      let formattedDuration = row.duration;
+      if (row.duration && row.duration > 0) {
+        const minutes = Math.floor(row.duration / 60);
+        const seconds = Math.floor(row.duration % 60);
+        formattedDuration = `${minutes}m ${seconds}s`;
+      }
+
+      return {
+        ...row,
+        timestamp: formattedTimestamp,
+        duration: formattedDuration,
+        from_alias: row.from_alias || (row.from_username && row.from_hostname ? `${row.from_username}@${row.from_hostname}` : (row.from_device_id || 'Desconhecido')),
+        to_alias: row.to_alias || (row.to_username && row.to_hostname ? `${row.to_username}@${row.to_hostname}` : (row.to_device_id || 'Desconhecido'))
+      };
+    });
     
     res.json(formatted);
   } catch (err) {

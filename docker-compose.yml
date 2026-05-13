@@ -23,36 +23,39 @@ services:
       - "21117:21117"
       - "21119:21119"
 
-  postgresdb:
+  postgres:
     image: postgres:15
     restart: always
     environment:
       POSTGRES_USER: rustdesk
       POSTGRES_PASSWORD: rustdesk123
       POSTGRES_DB: rustdesk
+      TZ: "America/Cuiaba"
+      PGTZ: "America/Cuiaba"
     volumes:
-      - ./pgdata_new:/var/lib/postgresql/data
+      - ./pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
   api:
     build: ./api
     depends_on:
-      - postgresdb
+      - postgres
     environment:
-      DATABASE_URL: postgres://rustdesk:rustdesk123@postgresdb:5432/rustdesk
+      DATABASE_URL: postgres://rustdesk:rustdesk123@postgres:5432/rustdesk
       JWT_SECRET: supersecretkey
       ID_SERVER: "76.13.174.204"
       RELAY_SERVER: "76.13.174.204"
-      RUSTDESK_KEY: "FiClwwg0SMw4aI3SAD1kyfzZFTWjb5nmD50q+8622JY="
+      RUSTDESK_KEY: "ExqDArHIxjQaRmMMYO4aLHsJAgqyehQmVd6ejr2Uua8="
       ADMIN_EMAIL: "administrador"
       ADMIN_PASSWORD: "tipref#2026"
+      TZ: "America/Cuiaba"
     ports:
       - "3000:3000"
     volumes:
       - ./api:/app
       - /app/node_modules
-      - ./data:/root:ro
+      - rustdesk_server_data:/root:ro  # Use o mesmo volume que o hbbs/hbbr!
 
   frontend:
     build: ./frontend
