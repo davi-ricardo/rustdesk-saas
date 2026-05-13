@@ -187,10 +187,10 @@ exports.logConnection = async (req, res) => {
     return res.json({ status: "ok" }); // Retorna ok para o client não reclamar
   }
 
-  // Se não tiver from ou to, usamos null para o que faltar
-  const save_from = final_from || null;
-  const save_to = final_to || null;
-
+  // Se não tiver from ou to, procura o log de "start" mais recente para o mesmo conn_id ou session_id
+  let save_from = final_from || null;
+  let save_to = final_to || null;
+  
   // Calcula a duração automaticamente se for um "close" e temos um "start"
   let calculatedDuration = final_duration;
   if ((final_action === 'close' || final_action === 'end') && (conn_id || session_id)) {
@@ -199,7 +199,7 @@ exports.logConnection = async (req, res) => {
       let startLog = null;
       if (conn_id) {
         const resultConn = await db.query(`
-          SELECT id, timestamp FROM connection_logs 
+          SELECT id, timestamp, from_device_id, to_device_id FROM connection_logs 
           WHERE conn_id = $1 
             AND (action = 'start' OR action = 'open')
           ORDER BY timestamp DESC 
@@ -211,7 +211,7 @@ exports.logConnection = async (req, res) => {
       }
       if (!startLog && session_id) {
         const resultSession = await db.query(`
-          SELECT id, timestamp FROM connection_logs 
+          SELECT id, timestamp, from_device_id, to_device_id FROM connection_logs 
           WHERE session_id = $1 
             AND (action = 'start' OR action = 'open')
           ORDER BY timestamp DESC 
@@ -222,12 +222,21 @@ exports.logConnection = async (req, res) => {
         }
       }
 
-      // Se encontrou o log de start, calcula a duração
+      // Se encontrou o log de start
       if (startLog) {
+        // Usa os from e to do log de start
+        if (!save_from) {
+          save_from = startLog.from_device_id;
+        }
+        if (!save_to) {
+          save_to = startLog.to_device_id;
+        }
+        // Calcula a duração
         const startDate = new Date(startLog.timestamp);
         const endDate = new Date();
         calculatedDuration = Math.floor((endDate - startDate) / 1000);
         console.log("[LOG] Duração calculada automaticamente:", calculatedDuration, "segundos");
+        console.log("[LOG] Usando from e to do log de start:", { save_from, save_to });
       }
     } catch (err) {
       console.error("[LOG] Erro ao calcular duração automaticamente:", err);
