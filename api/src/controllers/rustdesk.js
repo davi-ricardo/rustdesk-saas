@@ -103,8 +103,14 @@ exports.saveAlias = async (req, res) => {
 
 // Connection Logs - Capturar eventos
 exports.logConnection = async (req, res) => {
-  // Log para depuração na VPS
-  console.log("Log de conexão recebido (body completo):", JSON.stringify(req.body));
+  // Log para depuração na VPS - LOGA TUDO, inclusive as chaves!
+  console.log("=" .repeat(60));
+  console.log("[LOG] Nova requisição de conexão recebida!");
+  console.log("[LOG] Caminho da requisição:", req.path);
+  console.log("[LOG] Método:", req.method);
+  console.log("[LOG] Body completo (raw):", JSON.stringify(req.body, null, 2));
+  console.log("[LOG] Chaves do body:", Object.keys(req.body));
+  console.log("=" .repeat(60));
   
   // Captura MUITOS formatos possíveis que o RustDesk pode enviar
   const body = req.body;
@@ -117,7 +123,8 @@ exports.logConnection = async (req, res) => {
     body.source_id || 
     body.id || 
     body.from ||
-    body.peer_id;
+    body.peer_id ||
+    body.local_id; // Talvez seja esse!
   
   // Tenta encontrar o dispositivo de destino (cliente)
   const final_to = 
@@ -127,7 +134,9 @@ exports.logConnection = async (req, res) => {
     body.target_id || 
     body.target ||
     body.to ||
-    body.remote_id;
+    body.remote_id ||
+    body.peer_id || // Talvez o peer_id seja o destino?
+    body.id; // Ou o id seja o destino?
   
   // Tenta encontrar a ação
   const final_action = 
@@ -135,7 +144,9 @@ exports.logConnection = async (req, res) => {
     body.type || 
     body.event ||
     (body.connected ? 'start' : null) ||
-    (body.disconnected ? 'end' : null);
+    (body.disconnected ? 'end' : null) ||
+    (body.status === 'connected' ? 'start' : null) ||
+    (body.status === 'disconnected' ? 'end' : null);
   
   // Tenta encontrar a duração
   const final_duration = 
@@ -145,7 +156,7 @@ exports.logConnection = async (req, res) => {
     0;
 
   // Log para depuração
-  console.log("Log processado:", { 
+  console.log("[LOG] Log processado:", { 
     final_from, 
     final_to, 
     final_action, 
@@ -153,6 +164,7 @@ exports.logConnection = async (req, res) => {
   });
 
   if (!final_from || !final_to || !final_action) {
+    console.log("[LOG] Faltando campos, não salvando log.");
     return res.json({ status: "ok" }); // Retorna ok para o client não reclamar
   }
 
@@ -161,10 +173,10 @@ exports.logConnection = async (req, res) => {
       INSERT INTO connection_logs (from_device_id, to_device_id, action, duration)
       VALUES ($1, $2, $3, $4)
     `, [final_from, final_to, final_action, final_duration]);
-    console.log("Log salvo com sucesso no banco!");
+    console.log("[LOG] Log salvo com sucesso no banco!");
     res.json({ status: "ok" });
   } catch (err) {
-    console.error("Error logging connection:", err);
+    console.error("[LOG] Erro ao salvar log:", err);
     res.status(500).json({ error: "Failed to log connection" });
   }
 };
