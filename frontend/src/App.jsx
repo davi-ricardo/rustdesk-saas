@@ -312,7 +312,7 @@ function App() {
     return (
       <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'sans-serif' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eee', paddingBottom: '10px' }}>
-          <h1 style={{ color: '#333' }}>RustDesk SaaS Panel</h1>
+          <h1 style={{ color: '#333' }}>RemoteOps Panel</h1>
           <button onClick={handleLogout} style={{ padding: '8px 16px', cursor: 'pointer', borderRadius: '4px', border: '1px solid #ccc' }}>Sair</button>
         </div>
 
@@ -406,7 +406,7 @@ function App() {
                       <th style={{ padding: '10px' }}>Status</th>
                       <th style={{ padding: '10px' }}>Apelido / Nome</th>
                       <th style={{ padding: '10px' }}>Grupo</th>
-                      <th style={{ padding: '10px' }}>ID RustDesk</th>
+                      <th style={{ padding: '10px' }}>ID RemoteOps</th>
                       <th style={{ padding: '10px' }}>Ações</th>
                     </tr>
                   </thead>
@@ -788,7 +788,7 @@ function App() {
 
   return (
     <div style={{ padding: '50px', maxWidth: '400px', margin: '0 auto', textAlign: 'center', fontFamily: 'sans-serif' }}>
-      <h1 style={{ color: '#007bff' }}>RustDesk SaaS</h1>
+      <h1 style={{ color: '#007bff' }}>RemoteOps</h1>
       <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
         <input type="text" placeholder="Usuário ou E-mail" value={email} onChange={(e) => setEmail(e.target.value)} style={{ padding: '12px', borderRadius: '4px', border: '1px solid #ccc' }} required />
         <input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} style={{ padding: '12px', borderRadius: '4px', border: '1px solid #ccc' }} required />
