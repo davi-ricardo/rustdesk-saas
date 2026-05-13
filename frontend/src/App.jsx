@@ -527,32 +527,53 @@ function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {reports.map(log => (
-                    <tr key={log.id} style={{ borderBottom: '1px solid #eee' }}>
-                      <td style={{ padding: '10px', fontSize: '0.9em' }}>{new Date(log.timestamp).toLocaleString()}</td>
-                      <td style={{ padding: '10px' }}>{log.from_alias || log.from_device_id || 'Desconhecido'}</td>
-                      <td style={{ padding: '10px' }}>{log.to_alias || log.to_device_id}</td>
-                      <td style={{ padding: '10px' }}>
-                        <span style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '0.8em', background: log.category_name ? '#e7f3ff' : '#e9ecef', color: log.category_name ? '#007bff' : '#666' }}>
-                          {log.category_name || 'Não classificado'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '10px' }}>
-                        <span style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '0.8em', background: log.action === 'start' ? '#d4edda' : '#f8d7da', color: log.action === 'start' ? '#155724' : '#721c24' }}>
-                          {log.action === 'start' ? 'Iniciada' : 'Finalizada'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '10px' }}>{log.duration ? `${log.duration}s` : '-'}</td>
-                      <td style={{ padding: '10px' }}>
-                        <button 
-                          onClick={() => { setEditingLog(log); setSelectedCategoryId(log.category_id || '') }}
-                          style={{ padding: '4px 8px', fontSize: '0.8em', cursor: 'pointer' }}
-                        >
-                          Classificar
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {reports.map(log => {
+                    // Formata o timestamp usando o timezone do navegador
+                    let formattedDate = '-';
+                    if (log.timestamp) {
+                      const date = new Date(log.timestamp);
+                      formattedDate = date.toLocaleString();
+                    }
+
+                    // Formata o tempo de duração
+                    let formattedDuration = '-';
+                    if (log.duration && log.duration > 0) {
+                      const minutes = Math.floor(log.duration / 60);
+                      const seconds = Math.floor(log.duration % 60);
+                      if (minutes > 0) {
+                        formattedDuration = `${minutes}m ${seconds}s`;
+                      } else {
+                        formattedDuration = `${seconds}s`;
+                      }
+                    }
+
+                    return (
+                      <tr key={log.id} style={{ borderBottom: '1px solid #eee' }}>
+                        <td style={{ padding: '10px', fontSize: '0.9em' }}>{formattedDate}</td>
+                        <td style={{ padding: '10px' }}>{log.from_alias || log.from_device_id || 'Desconhecido'}</td>
+                        <td style={{ padding: '10px' }}>{log.to_alias || log.to_device_id}</td>
+                        <td style={{ padding: '10px' }}>
+                          <span style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '0.8em', background: log.category_name ? '#e7f3ff' : '#e9ecef', color: log.category_name ? '#007bff' : '#666' }}>
+                            {log.category_name || 'Não classificado'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px' }}>
+                          <span style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '0.8em', background: log.action === 'start' ? '#d4edda' : '#f8d7da', color: log.action === 'start' ? '#155724' : '#721c24' }}>
+                            {log.action === 'start' ? 'Iniciada' : 'Finalizada'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px' }}>{formattedDuration}</td>
+                        <td style={{ padding: '10px' }}>
+                          <button 
+                            onClick={() => { setEditingLog(log); setSelectedCategoryId(log.category_id || '') }}
+                            style={{ padding: '4px 8px', fontSize: '0.8em', cursor: 'pointer' }}
+                          >
+                            Classificar
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
