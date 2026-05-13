@@ -115,31 +115,38 @@ exports.logConnection = async (req, res) => {
   // Captura MUITOS formatos possíveis que o RustDesk pode enviar
   const body = req.body;
   
-  // Tenta encontrar o dispositivo de origem (técnico)
-  const final_from = 
-    body.from_device_id || 
-    body.from_id || 
-    body.src_id || 
-    body.source_id || 
-    body.id || 
-    body.from ||
-    body.peer_id ||
-    body.local_id; // Talvez seja esse!
-  
-  // Tenta encontrar o dispositivo de destino (cliente)
-  const final_to = 
-    body.to_device_id || 
-    body.to_id || 
-    body.dst_id || 
-    body.target_id || 
-    body.target ||
-    body.to ||
-    body.remote_id ||
-    body.peer_id || // Talvez o peer_id seja o destino?
-    body.id; // Ou o id seja o destino?
+  // Se tem o campo "peer" (array), usa body.id e peer[0] como os dois IDs
+  let final_from, final_to;
+  if (body.peer && Array.isArray(body.peer) && body.peer.length >= 1) {
+    final_from = body.id;
+    final_to = body.peer[0];
+  } else {
+    // Tenta encontrar o dispositivo de origem (técnico)
+    final_from = 
+      body.from_device_id || 
+      body.from_id || 
+      body.src_id || 
+      body.source_id || 
+      body.id || 
+      body.from ||
+      body.peer_id ||
+      body.local_id; // Talvez seja esse!
+    
+    // Tenta encontrar o dispositivo de destino (cliente)
+    final_to = 
+      body.to_device_id || 
+      body.to_id || 
+      body.dst_id || 
+      body.target_id || 
+      body.target ||
+      body.to ||
+      body.remote_id ||
+      body.peer_id || // Talvez o peer_id seja o destino?
+      body.id; // Ou o id seja o destino?
+  }
   
   // Tenta encontrar a ação
-  const final_action = 
+  let final_action = 
     body.action || 
     body.type || 
     body.event ||
@@ -147,6 +154,11 @@ exports.logConnection = async (req, res) => {
     (body.disconnected ? 'end' : null) ||
     (body.status === 'connected' ? 'start' : null) ||
     (body.status === 'disconnected' ? 'end' : null);
+  
+  // Se não tem ação e tem type=0, assume que é "start"
+  if (!final_action && body.type === 0) {
+    final_action = 'start';
+  }
   
   // Tenta encontrar a duração
   const final_duration = 
