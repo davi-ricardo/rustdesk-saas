@@ -155,6 +155,11 @@ exports.logConnection = async (req, res) => {
     (body.status === 'connected' ? 'start' : null) ||
     (body.status === 'disconnected' ? 'end' : null);
   
+  // Se ação é "new", assume que é "start"
+  if (final_action === 'new') {
+    final_action = 'start';
+  }
+  
   // Se não tem ação e tem type=0, assume que é "start"
   if (!final_action && body.type === 0) {
     final_action = 'start';
