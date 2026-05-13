@@ -1,56 +1,69 @@
 # RustDesk SaaS - Painel de Gerenciamento Centralizado
 
-Este projeto é um painel de gerenciamento SaaS para servidores **RustDesk**. Ele permite que você centralize o controle de seus servidores de conexão (HBBS/HBBR), rastreie dispositivos online e forneça uma interface amigável para os usuários configurarem seus clientes RustDesk.
+Este projeto é um painel de gerenciamento SaaS completo para servidores **RustDesk**. Ele permite centralizar o controle de seus servidores de conexão (HBBS/HBBR), gerenciar dispositivos, grupos, usuários, relatórios e tipos de serviço, tudo em uma interface amigável.
 
 ## 🚀 Funcionalidades e Como Utilizar
 
-O painel foi evoluído para ser uma ferramenta completa de gestão de suporte e infraestrutura. Abaixo estão as funções disponíveis e como aproveitá-las:
+O painel é uma ferramenta completa de gestão de suporte e infraestrutura. Abaixo estão as funções disponíveis:
 
 ### 📱 1. Gerenciamento de Dispositivos (Livro de Endereços)
 - **O que faz**: Lista todos os computadores que utilizam o seu servidor RustDesk.
-- **Como usar**: 
-    - Os IDs aparecem automaticamente assim que o RustDesk Client é configurado com sua API.
-    - Clique em **Editar** para dar um **Apelido** (Ex: "PC Financeiro 01") para facilitar a identificação.
-    - Visualize o status em tempo real (Online/Offline) através dos indicadores coloridos.
+- **Recursos**:
+  - IDs aparecem automaticamente ao configurar o RustDesk Client com sua API
+  - Atribuição de apelidos amigáveis (ex: "PC Financeiro 01")
+  - Status em tempo real (Online/Offline) com indicadores coloridos
+  - Filtro por grupos/departamentos
 
 ### 🏢 2. Grupos por Departamento
-- **O que faz**: Permite organizar os IDs por setores da empresa (RH, TI, Vendas, etc.).
-- **Como usar**:
-    - Vá na aba **Grupos (Departamentos)** para criar e gerenciar os setores.
-    - Na aba **Dispositivos**, edite um computador e vincule-o ao grupo correspondente.
-    - Utilize o botão **Ver IDs** dentro de um grupo para filtrar rapidamente apenas as máquinas daquele setor.
-    - No topo da lista de dispositivos, use o filtro por grupo para uma navegação rápida.
+- **O que faz**: Organiza os dispositivos por setores da empresa (RH, TI, Vendas, etc.).
+- **Recursos**:
+  - Criação e gerenciamento de grupos
+  - Vinculação de dispositivos a grupos
+  - Botão "Ver IDs" para filtrar rapidamente dispositivos de um grupo
+  - Filtro por grupo na lista de dispositivos
 
 ### 📜 3. Relatórios de Conexão (Auditoria)
 - **O que faz**: Registra o histórico de quem acessou qual máquina e por quanto tempo.
-- **Como usar**:
-    - Acesse a aba **Relatórios** para ver os logs de conexões iniciadas e finalizadas.
-    - O sistema identifica automaticamente o apelido do técnico (origem) e do cliente (destino).
-    - Útil para auditoria de segurança e controle de produtividade da equipe de suporte.
+- **Recursos**:
+  - Logs de conexões iniciadas e finalizadas
+  - Identificação automática de técnico (origem) e cliente (destino)
+  - Classificação de logs por **Tipos de Serviço**
+  - **Exportação para Excel (XLSX)** por mês/ano
+  - Útil para auditoria de segurança e controle de produtividade
 
-### 👥 4. Gerenciamento de Usuários
+### 🏷️ 4. Tipos de Serviço
+- **O que faz**: Cria categorias para classificar os atendimentos (ex: Problema na impressora, Instalação de software).
+- **Recursos**:
+  - Criação, edição e exclusão de categorias
+  - Vinculação de categorias aos logs de conexão
+  - Apenas administradores podem gerenciar tipos de serviço
+
+### 👥 5. Gerenciamento de Usuários
 - **O que faz**: Controla quem tem permissão para acessar o painel administrativo.
-- **Como usar**:
-    - Na aba **Usuários**, crie contas para seus técnicos.
-    - Defina níveis de acesso (**Admin** ou **User**).
-    - O sistema permite login tanto pelo **Nome de Usuário** quanto pelo **E-mail**.
+- **Recursos**:
+  - Criação de contas para técnicos
+  - Níveis de acesso: **Admin** (acesso total) ou **User** (acesso limitado)
+  - Login tanto por **Nome de Usuário** quanto por **E-mail**
+  - Ativação/desativação de usuários
 
-### 🔗 5. Sincronização Nativa com RustDesk App
+### 🔗 6. Sincronização Nativa com RustDesk App
 - **O que faz**: Alimenta o "Address Book" do próprio aplicativo RustDesk.
 - **Como usar**:
-    - Ao logar no aplicativo RustDesk do seu computador usando as credenciais do painel, todos os contatos que você nomeou no dashboard aparecerão automaticamente na lista do app, organizados e prontos para conexão.
+  - Ao logar no RustDesk Client com as credenciais do painel, os contatos aparecem automaticamente na lista do app
 
 ## 🛠️ Tecnologias Utilizadas
 
-- **Frontend**: React, Axios, Vite.
-- **Backend**: Node.js, Express.
-- **Banco de Dados**: PostgreSQL.
-- **Infraestrutura**: Docker e Docker Compose.
-- **Servidor Remoto**: Compatível com o ecossistema RustDesk (HBBS/HBBR).
+| Camada | Tecnologias |
+|--------|--------------|
+| Frontend | React, Axios, Vite |
+| Backend | Node.js, Express, JWT, xlsx |
+| Banco de Dados | PostgreSQL 15 |
+| Infraestrutura | Docker, Docker Compose |
+| Servidor RustDesk | HBBS/HBBR (imagem oficial) |
 
 ## 📋 Pré-requisitos
 
-Antes de começar, você precisará ter instalado em sua máquina:
+Antes de começar, você precisará ter instalado:
 - [Docker](https://www.docker.com/)
 - [Docker Compose](https://docs.docker.com/compose/)
 - [Git](https://git-scm.com/)
@@ -64,8 +77,8 @@ Antes de começar, você precisará ter instalado em sua máquina:
    cd rustdesk-saas
    ```
 
-2. **Ajuste o `docker-compose.yml`:**
-   Configure seu IP da VPS e a Key pública.
+2. **Ajuste o `docker-compose.yml` (opcional):**
+   Configure IP da VPS, chave pública e credenciais admin.
 
 3. **Suba os containers:**
    ```bash
@@ -73,7 +86,7 @@ Antes de começar, você precisará ter instalado em sua máquina:
    ```
 
 ### ☁️ Produção (VPS)
-Este projeto foi desenhado para ser facilmente implantado em uma VPS (ex: Ubuntu 22.04).
+Projeto otimizado para implantação em VPS (ex: Ubuntu 22.04).
 
 1. **Acesse sua VPS via SSH:**
    ```bash
@@ -81,7 +94,9 @@ Este projeto foi desenhado para ser facilmente implantado em uma VPS (ex: Ubuntu
    ```
 
 2. **Instale as dependências (se necessário):**
-   Garanta que o `git`, `docker` e `docker-compose` estejam instalados.
+   ```bash
+   apt update && apt install -y git docker docker-compose
+   ```
 
 3. **Clone o projeto na VPS:**
    ```bash
@@ -91,12 +106,15 @@ Este projeto foi desenhado para ser facilmente implantado em uma VPS (ex: Ubuntu
    ```
 
 4. **Configuração de Firewall:**
-   É essencial liberar as seguintes portas para o funcionamento pleno:
-   - **8080 (TCP)**: Painel Web (Frontend).
-   - **3000 (TCP)**: API e Sincronização de Clients.
-   - **21115-21119 (TCP/UDP)**: Protocolos nativos do RustDesk (HBBS/HBBR).
+   Libere as portas essenciais:
+   - **8080 (TCP)**: Painel Web (Frontend)
+   - **3000 (TCP)**: API e Sincronização de Clients
+   - **21115-21119 (TCP/UDP)**: Protocolos nativos do RustDesk
 
-   *Comando rápido (UFW):* `ufw allow 8080,3000,21115:21119/tcp && ufw allow 21116/udp`
+   *Comando rápido (UFW):*
+   ```bash
+   ufw allow 8080,3000,21115:21119/tcp && ufw allow 21116/udp
+   ```
 
 5. **Deploy:**
    ```bash
@@ -105,42 +123,58 @@ Este projeto foi desenhado para ser facilmente implantado em uma VPS (ex: Ubuntu
 
 ## 🔐 Segurança e Acesso
 
-O painel utiliza um sistema de login administrativo. Você pode personalizar as credenciais diretamente no `docker-compose.yml` na seção `environment` da `api`:
+Personalize as credenciais no `docker-compose.yml` (seção `environment` da `api`):
 
-- `ADMIN_EMAIL`: Seu e-mail ou nome de usuário (ex: `administrador`).
-- `ADMIN_PASSWORD`: Sua senha segura.
+- `ADMIN_EMAIL`: Nome de usuário ou e-mail do admin (ex: `administrador`)
+- `ADMIN_PASSWORD`: Senha segura do admin
 
-> **Nota:** O sistema aceita login tanto pelo e-mail quanto pelo nome de usuário configurado. Sempre que alterar esses valores no arquivo e reiniciar o container, as credenciais serão sincronizadas automaticamente com o banco de dados.
+> **Nota**: O sistema aceita login tanto por e-mail quanto por nome de usuário. Ao alterar esses valores e reiniciar o container, as credenciais são sincronizadas automaticamente com o banco.
 
 ## 🖥️ Como Acessar
 
-Após o build, o sistema estará disponível nos seguintes endereços:
-
-- **Painel Administrativo**: [http://localhost:8080](http://localhost:8080)
+Após o build, acesse:
+- **Painel Administrativo**: [http://localhost:8080](http://localhost:8080) (ou IP da VPS)
 - **API Backend**: [http://localhost:3000](http://localhost:3000)
 
-### Credenciais Padrão (Login):
-- **E-mail**: `admin@test.com`
-- **Senha**: `123`
+### Credenciais Padrão:
+- **Usuário/E-mail**: `administrador`
+- **Senha**: `tipref#2026` (ou a que você configurou)
 
 ## 🔌 Configurando o RustDesk Client
 
-Para que seus dispositivos apareçam no painel, configure o aplicativo RustDesk no computador do cliente:
-
-1. Vá em **Configurações > Rede**.
-2. No campo **ID Server** e **Relay Server**, coloque o IP configurado no painel.
-3. No campo **Key**, cole a chave que aparece no seu Dashboard.
-4. No campo **API Server**, coloque `http://seu-ip-da-api:3000`.
+Para que os dispositivos apareçam no painel:
+1. Abra o RustDesk Client
+2. Vá em **Configurações > Rede**
+3. Preencha:
+   - **ID Server**: IP do seu servidor
+   - **Relay Server**: IP do seu servidor
+   - **Key**: Chave pública (disponível no painel)
+   - **API Server**: `http://SEU-IP:3000`
 
 ## 📂 Estrutura do Projeto
 
 ```text
 rustdesk-saas/
-├── api/             # Backend Node.js (Express + PostgreSQL)
-├── frontend/        # Frontend React (Vite)
-├── data/            # Dados e chaves do servidor RustDesk
-├── pgdata/          # Dados persistentes do PostgreSQL (ignorado no git)
-└── docker-compose.yml
+├── api/                  # Backend Node.js (Express + PostgreSQL)
+│   ├── src/
+│   │   ├── controllers/  # Lógica de negócio
+│   │   ├── middleware/   # Autenticação JWT
+│   │   ├── routes/       # Definição de rotas
+│   │   ├── db.js         # Conexão com PostgreSQL
+│   │   └── index.js      # Arquivo principal do servidor
+│   ├── Dockerfile
+│   └── package.json
+├── frontend/             # Frontend React (Vite)
+│   ├── src/
+│   │   ├── services/     # Cliente HTTP (Axios)
+│   │   ├── App.jsx       # Interface principal
+│   │   └── main.jsx
+│   ├── Dockerfile
+│   └── package.json
+├── data/                 # Dados e chaves do RustDesk
+├── pgdata/               # Dados persistentes do PostgreSQL
+├── DOCUMENTACAO.md       # Documentação completa do código
+└── docker-compose.yml    # Orquestração Docker
 ```
 
 ## 📄 Licença
