@@ -174,6 +174,21 @@ exports.logConnection = async (req, res) => {
   const save_to = final_to || null;
 
   try {
+    // Verifica se já existe um log com os mesmos dados nos últimos 5 segundos (evita duplicatas)
+    const checkResult = await db.query(`
+      SELECT id FROM connection_logs 
+      WHERE from_device_id IS NOT DISTINCT FROM $1 
+        AND to_device_id IS NOT DISTINCT FROM $2 
+        AND action = $3 
+        AND timestamp >= NOW() - INTERVAL '5 seconds'
+    `, [save_from, save_to, final_action]);
+
+    if (checkResult.rows.length > 0) {
+      console.log("[LOG] Log duplicado detectado, não salvando.");
+      return res.json({ status: "ok" });
+    }
+
+    // Insere o novo log
     await db.query(`
       INSERT INTO connection_logs (from_device_id, to_device_id, action, duration)
       VALUES ($1, $2, $3, $4)
