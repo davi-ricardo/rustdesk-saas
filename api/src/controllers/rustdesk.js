@@ -363,7 +363,11 @@ exports.sysinfo = (req, res) => {
 
 exports.ingestHbbrLogs = async (req, res) => {
   try {
-    console.log("HBBR logs received:", JSON.stringify(req.body));
+    console.log("=" .repeat(60));
+    console.log("[LOG] HBBR logs received!");
+    console.log("[LOG] Body completo (raw):", JSON.stringify(req.body, null, 2));
+    console.log("[LOG] Chaves do body:", Object.keys(req.body));
+    console.log("=" .repeat(60));
     res.json({ status: "ok" });
   } catch (err) {
     console.error("Error ingesting HBBR logs:", err);
