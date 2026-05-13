@@ -191,6 +191,12 @@ exports.logConnection = async (req, res) => {
     console.log("[LOG] Faltando ação, não salvando log.");
     return res.json({ status: "ok" }); // Retorna ok para o client não reclamar
   }
+  
+  // Se ação é "new" e não tem peer, não salva (o request com peer vai salvar como start)
+  if (final_action === 'start' && body.action === 'new' && !body.peer) {
+    console.log("[LOG] Ação 'new' sem peer, não salvando log (esperando request com peer).");
+    return res.json({ status: "ok" }); // Retorna ok para o client não reclamar
+  }
 
   // Se não tiver from ou to, procura o log de "start" mais recente para o mesmo conn_id ou session_id
   let save_from = final_from || null;
