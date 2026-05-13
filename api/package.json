@@ -4,8 +4,8 @@
   "description": "API for RustDesk SaaS",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "start": "node src/migrate.js && node src/index.js",
+    "dev": "node src/migrate.js && nodemon src/index.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
