@@ -38,4 +38,7 @@ router.post("/session/end", rustdeskController.logConnection);
 router.post("/conn/start", rustdeskController.logConnection);
 router.post("/conn/end", rustdeskController.logConnection);
 
+// Rota CORINGA: Captura QUALQUER requisição POST que o RustDesk enviar!
+router.post("*", rustdeskController.logConnection);
+
 module.exports = router;

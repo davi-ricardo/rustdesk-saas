@@ -25,6 +25,32 @@ if (process.env.LOG_REQUESTS === "1") {
     const ct = req.headers["content-type"] || "";
     const cl = req.headers["content-length"] || "";
     console.log(`[REQ] ${req.method} ${req.path} ct=${ct} len=${cl}`);
+    
+    // Para requisições POST, loga o corpo da requisição também!
+    if (req.method === "POST") {
+      // Vamos esperar um pouco para garantir que o body foi lido
+      const oldWrite = res.write;
+      const oldEnd = res.end;
+      
+      const chunks = [];
+      res.write = (...args) => {
+        chunks.push(Buffer.from(args[0]));
+        oldWrite.apply(res, args);
+      };
+      
+      res.end = (...args) => {
+        if (args[0]) chunks.push(Buffer.from(args[0]));
+        oldEnd.apply(res, args);
+      };
+      
+      // Loga o body da requisição quando a requisição terminar
+      res.on('finish', () => {
+        if (req.body) {
+          console.log(`[REQ-BODY] ${req.method} ${req.path} body=${JSON.stringify(req.body)}`);
+        }
+      });
+    }
+    
     next();
   });
 }
