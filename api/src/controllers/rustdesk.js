@@ -155,12 +155,18 @@ exports.logConnection = async (req, res) => {
     body.time ||
     0;
 
+  // Captura conn_id e session_id
+  const conn_id = body.conn_id || null;
+  const session_id = body.session_id || null;
+
   // Log para depuração
   console.log("[LOG] Log processado:", { 
     final_from, 
     final_to, 
     final_action, 
-    final_duration 
+    final_duration,
+    conn_id,
+    session_id
   });
 
   // Se só tiver um ID, usamos ele como um e o outro como null
@@ -173,6 +179,49 @@ exports.logConnection = async (req, res) => {
   const save_from = final_from || null;
   const save_to = final_to || null;
 
+  // Calcula a duração automaticamente se for um "close" e temos um "start"
+  let calculatedDuration = final_duration;
+  if ((final_action === 'close' || final_action === 'end') && (conn_id || session_id)) {
+    try {
+      // Procura o log de "start" mais recente
+      let startLog = null;
+      if (conn_id) {
+        const resultConn = await db.query(`
+          SELECT id, timestamp FROM connection_logs 
+          WHERE conn_id = $1 
+            AND (action = 'start' OR action = 'open')
+          ORDER BY timestamp DESC 
+          LIMIT 1
+        `, [conn_id]);
+        if (resultConn.rows.length > 0) {
+          startLog = resultConn.rows[0];
+        }
+      }
+      if (!startLog && session_id) {
+        const resultSession = await db.query(`
+          SELECT id, timestamp FROM connection_logs 
+          WHERE session_id = $1 
+            AND (action = 'start' OR action = 'open')
+          ORDER BY timestamp DESC 
+          LIMIT 1
+        `, [session_id]);
+        if (resultSession.rows.length > 0) {
+          startLog = resultSession.rows[0];
+        }
+      }
+
+      // Se encontrou o log de start, calcula a duração
+      if (startLog) {
+        const startDate = new Date(startLog.timestamp);
+        const endDate = new Date();
+        calculatedDuration = Math.floor((endDate - startDate) / 1000);
+        console.log("[LOG] Duração calculada automaticamente:", calculatedDuration, "segundos");
+      }
+    } catch (err) {
+      console.error("[LOG] Erro ao calcular duração automaticamente:", err);
+    }
+  }
+
   try {
     // Verifica se já existe um log com os mesmos dados nos últimos 5 segundos (evita duplicatas)
     const checkResult = await db.query(`
@@ -180,8 +229,10 @@ exports.logConnection = async (req, res) => {
       WHERE from_device_id IS NOT DISTINCT FROM $1 
         AND to_device_id IS NOT DISTINCT FROM $2 
         AND action = $3 
+        AND conn_id IS NOT DISTINCT FROM $4
+        AND session_id IS NOT DISTINCT FROM $5
         AND timestamp >= NOW() - INTERVAL '5 seconds'
-    `, [save_from, save_to, final_action]);
+    `, [save_from, save_to, final_action, conn_id, session_id]);
 
     if (checkResult.rows.length > 0) {
       console.log("[LOG] Log duplicado detectado, não salvando.");
@@ -190,9 +241,9 @@ exports.logConnection = async (req, res) => {
 
     // Insere o novo log
     await db.query(`
-      INSERT INTO connection_logs (from_device_id, to_device_id, action, duration)
-      VALUES ($1, $2, $3, $4)
-    `, [save_from, save_to, final_action, final_duration]);
+      INSERT INTO connection_logs (from_device_id, to_device_id, action, duration, conn_id, session_id)
+      VALUES ($1, $2, $3, $4, $5, $6)
+    `, [save_from, save_to, final_action, calculatedDuration, conn_id, session_id]);
     console.log("[LOG] Log salvo com sucesso no banco!");
     res.json({ status: "ok" });
   } catch (err) {
