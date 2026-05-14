@@ -89,9 +89,13 @@ function App() {
 
   const fetchUsers = async () => {
     try {
+      console.log('[DEBUG] fetchUsers: Buscando usuários...')
       const response = await api.get('/api/users')
+      console.log('[DEBUG] fetchUsers: Resposta da API:', response.data)
       setUsers(response.data)
-    } catch (err) { console.error('Erro ao buscar usuários') }
+    } catch (err) { 
+      console.error('[DEBUG] fetchUsers: Erro:', err) 
+    }
   }
 
   const fetchGroups = async () => {
@@ -275,14 +279,28 @@ function App() {
 
   const handleCreateUser = async (e) => {
     e.preventDefault()
+    console.log('[DEBUG] handleCreateUser: Dados a enviar:', { 
+      username: newUserName, 
+      email: newUserEmail, 
+      role: newUserRole 
+    })
     try {
-      await api.post('/api/users', { username: newUserName, email: newUserEmail, password: newUserPass, role: newUserRole })
+      const response = await api.post('/api/users', { 
+        username: newUserName, 
+        email: newUserEmail, 
+        password: newUserPass, 
+        role: newUserRole 
+      })
+      console.log('[DEBUG] handleCreateUser: Resposta da API:', response.data)
       setNewUserName('')
       setNewUserEmail('')
       setNewUserPass('')
       fetchUsers()
       alert('Usuário criado!')
-    } catch (err) { alert('Erro ao criar usuário') }
+    } catch (err) { 
+      console.error('[DEBUG] handleCreateUser: Erro:', err)
+      alert('Erro ao criar usuário: ' + (err.response?.data?.error || err.message)) 
+    }
   }
 
   const handleSaveUser = async (e) => {
