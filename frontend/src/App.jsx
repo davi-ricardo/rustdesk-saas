@@ -787,16 +787,110 @@ function App() {
   }
 
   return (
-    <div style={{ padding: '50px', maxWidth: '400px', margin: '0 auto', textAlign: 'center', fontFamily: 'sans-serif' }}>
-      <h1 style={{ color: '#007bff' }}>RemoteOps</h1>
-      <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <input type="text" placeholder="Usuário ou E-mail" value={email} onChange={(e) => setEmail(e.target.value)} style={{ padding: '12px', borderRadius: '4px', border: '1px solid #ccc' }} required />
-        <input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} style={{ padding: '12px', borderRadius: '4px', border: '1px solid #ccc' }} required />
-        <button type="submit" disabled={loading} style={{ padding: '12px', background: loading ? '#ccc' : '#007bff', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer' }}>
-          {loading ? 'Carregando...' : 'Entrar'}
-        </button>
-      </form>
-      {error && <p style={{ color: 'red', marginTop: '15px' }}>{error}</p>}
+    <div style={{ 
+      minHeight: '100vh', 
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      fontFamily: 'sans-serif'
+    }}>
+      <div style={{ 
+        background: 'white', 
+        padding: '40px', 
+        borderRadius: '12px', 
+        boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+        maxWidth: '400px',
+        width: '100%',
+        margin: '20px'
+      }}>
+        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+          <div style={{ 
+            fontSize: '48px', 
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            fontWeight: 'bold',
+            marginBottom: '10px'
+          }}>RemoteOps</div>
+          <p style={{ color: '#666', margin: 0 }}>Sistema de acesso remoto</p>
+        </div>
+
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ color: '#333', fontSize: '0.9em', fontWeight: '500' }}>Usuário ou E-mail</label>
+            <input 
+              type="text" 
+              placeholder="Digite seu usuário ou e-mail"
+              value={email} 
+              onChange={(e) => setEmail(e.target.value)} 
+              style={{ 
+                padding: '14px 16px', 
+                borderRadius: '8px', 
+                border: '2px solid #e0e0e0',
+                fontSize: '16px',
+                transition: 'border-color 0.3s'
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#667eea'}
+              onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+              required 
+            />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ color: '#333', fontSize: '0.9em', fontWeight: '500' }}>Senha</label>
+            <input 
+              type="password" 
+              placeholder="Digite sua senha"
+              value={password} 
+              onChange={(e) => setPassword(e.target.value)} 
+              style={{ 
+                padding: '14px 16px', 
+                borderRadius: '8px', 
+                border: '2px solid #e0e0e0',
+                fontSize: '16px',
+                transition: 'border-color 0.3s'
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#667eea'}
+              onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+              required 
+            />
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={loading} 
+            style={{ 
+              padding: '14px', 
+              background: loading ? '#ccc' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '8px', 
+              fontWeight: 'bold', 
+              fontSize: '16px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              transition: 'transform 0.2s, box-shadow 0.2s'
+            }}
+            onMouseEnter={(e) => !loading && (e.target.style.transform = 'translateY(-2px)')}
+            onMouseLeave={(e) => !loading && (e.target.style.transform = 'translateY(0)')}
+          >
+            {loading ? 'Carregando...' : 'Entrar'}
+          </button>
+        </form>
+        {error && (
+          <div style={{ 
+            marginTop: '20px', 
+            padding: '12px', 
+            background: '#fff3f3', 
+            border: '1px solid #ffc9c9', 
+            borderRadius: '8px', 
+            color: '#c92a2a' 
+          }}>
+            {error}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
