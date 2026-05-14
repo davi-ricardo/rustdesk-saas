@@ -789,107 +789,169 @@ function App() {
   return (
     <div style={{ 
       minHeight: '100vh', 
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)', 
       display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      fontFamily: 'sans-serif'
+      fontFamily: 'system-ui, -apple-system, sans-serif'
     }}>
+      {/* Coluna da esquerda: Texto do projeto */}
       <div style={{ 
-        background: 'white', 
-        padding: '40px', 
-        borderRadius: '12px', 
-        boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-        maxWidth: '400px',
-        width: '100%',
-        margin: '20px'
+        flex: 1, 
+        display: 'flex', 
+        flexDirection: 'column', 
+        justifyContent: 'center', 
+        padding: '60px',
+        color: 'white'
       }}>
-        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <div style={{ 
-            fontSize: '48px', 
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            fontWeight: 'bold',
-            marginBottom: '10px'
-          }}>RemoteOps</div>
-          <p style={{ color: '#666', margin: 0 }}>Sistema de acesso remoto</p>
-        </div>
+        <div style={{ 
+          fontSize: '72px', 
+          fontWeight: '800',
+          background: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+          marginBottom: '8px'
+        }}>RemoteOps</div>
+        
+        <div style={{ 
+          fontSize: '20px', 
+          color: '#94a3b8', 
+          fontWeight: '500',
+          marginBottom: '24px'
+        }}>Remote Infrastructure Management Platform</div>
+        
+        <div style={{ 
+          fontSize: '16px', 
+          color: '#cbd5e1', 
+          lineHeight: '1.6',
+          maxWidth: '500px'
+        }}>Plataforma de gerenciamento remoto para equipes de suporte, MSPs e operações corporativas.</div>
+      </div>
 
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ color: '#333', fontSize: '0.9em', fontWeight: '500' }}>Usuário ou E-mail</label>
-            <input 
-              type="text" 
-              placeholder="Digite seu usuário ou e-mail"
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)} 
-              style={{ 
-                padding: '14px 16px', 
-                borderRadius: '8px', 
-                border: '2px solid #e0e0e0',
-                fontSize: '16px',
-                transition: 'border-color 0.3s'
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#667eea'}
-              onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
-              required 
-            />
+      {/* Coluna da direita: Caixa de login */}
+      <div style={{ 
+        flex: 1, 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        padding: '40px'
+      }}>
+        <div style={{ 
+          background: 'rgba(30, 41, 59, 0.8)', 
+          backdropFilter: 'blur(20px)',
+          padding: '48px', 
+          borderRadius: '24px', 
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(148, 163, 184, 0.1)',
+          border: '1px solid rgba(148, 163, 184, 0.2)',
+          maxWidth: '440px',
+          width: '100%'
+        }}>
+          <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+            <div style={{ 
+              fontSize: '24px', 
+              fontWeight: '700',
+              color: 'white',
+              marginBottom: '8px'
+            }}>Bem-vindo de volta</div>
+            <div style={{ 
+              fontSize: '14px', 
+              color: '#94a3b8'
+            }}>Acesse sua conta para continuar</div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ color: '#333', fontSize: '0.9em', fontWeight: '500' }}>Senha</label>
-            <input 
-              type="password" 
-              placeholder="Digite sua senha"
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
-              style={{ 
-                padding: '14px 16px', 
-                borderRadius: '8px', 
-                border: '2px solid #e0e0e0',
-                fontSize: '16px',
-                transition: 'border-color 0.3s'
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#667eea'}
-              onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
-              required 
-            />
-          </div>
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ color: '#cbd5e1', fontSize: '14px', fontWeight: '500' }}>Usuário ou E-mail</label>
+              <input 
+                type="text" 
+                placeholder="Digite seu usuário ou e-mail"
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                style={{ 
+                  padding: '14px 16px', 
+                  borderRadius: '12px', 
+                  border: '1px solid rgba(148, 163, 184, 0.3)',
+                  background: 'rgba(15, 23, 42, 0.5)',
+                  color: 'white',
+                  fontSize: '15px',
+                  outline: 'none',
+                  transition: 'border-color 0.2s, box-shadow 0.2s'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#3b82f6';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'rgba(148, 163, 184, 0.3)';
+                  e.target.style.boxShadow = 'none';
+                }}
+                required 
+              />
+            </div>
 
-          <button 
-            type="submit" 
-            disabled={loading} 
-            style={{ 
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ color: '#cbd5e1', fontSize: '14px', fontWeight: '500' }}>Senha</label>
+              <input 
+                type="password" 
+                placeholder="Digite sua senha"
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                style={{ 
+                  padding: '14px 16px', 
+                  borderRadius: '12px', 
+                  border: '1px solid rgba(148, 163, 184, 0.3)',
+                  background: 'rgba(15, 23, 42, 0.5)',
+                  color: 'white',
+                  fontSize: '15px',
+                  outline: 'none',
+                  transition: 'border-color 0.2s, box-shadow 0.2s'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#3b82f6';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'rgba(148, 163, 184, 0.3)';
+                  e.target.style.boxShadow = 'none';
+                }}
+                required 
+              />
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={loading} 
+              style={{ 
+                padding: '14px', 
+                background: loading ? 'rgba(59, 130, 246, 0.5)' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '12px', 
+                fontWeight: '700', 
+                fontSize: '15px',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                boxShadow: '0 10px 25px -5px rgba(59, 130, 246, 0.4)'
+              }}
+              onMouseEnter={(e) => !loading && (e.target.style.transform = 'translateY(-2px)')}
+              onMouseLeave={(e) => !loading && (e.target.style.transform = 'translateY(0)')}
+            >
+              {loading ? 'Carregando...' : 'Acessar Dashboard'}
+            </button>
+          </form>
+          {error && (
+            <div style={{ 
+              marginTop: '24px', 
               padding: '14px', 
-              background: loading ? '#ccc' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
-              color: 'white', 
-              border: 'none', 
-              borderRadius: '8px', 
-              fontWeight: 'bold', 
-              fontSize: '16px',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              transition: 'transform 0.2s, box-shadow 0.2s'
-            }}
-            onMouseEnter={(e) => !loading && (e.target.style.transform = 'translateY(-2px)')}
-            onMouseLeave={(e) => !loading && (e.target.style.transform = 'translateY(0)')}
-          >
-            {loading ? 'Carregando...' : 'Entrar'}
-          </button>
-        </form>
-        {error && (
-          <div style={{ 
-            marginTop: '20px', 
-            padding: '12px', 
-            background: '#fff3f3', 
-            border: '1px solid #ffc9c9', 
-            borderRadius: '8px', 
-            color: '#c92a2a' 
-          }}>
-            {error}
-          </div>
-        )}
+              background: 'rgba(239, 68, 68, 0.1)', 
+              border: '1px solid rgba(239, 68, 68, 0.3)', 
+              borderRadius: '12px', 
+              color: '#fca5a5',
+              fontSize: '14px'
+            }}>
+              {error}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
