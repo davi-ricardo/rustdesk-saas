@@ -41,12 +41,12 @@ if (process.env.LOG_REQUESTS === "1") {
   });
 }
 
-// Routes
+// Routes (ordem importante: rotas específicas antes da rota coringa do RustDesk!)
 app.use("/api/auth", authRoutes);
-app.use("/api", rustdeskRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/service-categories", serviceCategoriesRoutes);
+app.use("/api", rustdeskRoutes);
 
 // Database initialization
 const db = require("./db");
