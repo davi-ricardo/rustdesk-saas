@@ -9,6 +9,9 @@ function App() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [serverInfo, setServerInfo] = useState(null)
+
+  console.log('DEBUG: App initialized - token:', token ? 'present' : 'not present')
+  console.log('DEBUG: App initialized - currentUser:', currentUser)
   const [editingServerInfo, setEditingServerInfo] = useState(false)
   const [editIdServer, setEditIdServer] = useState('')
   const [editRelayServer, setEditRelayServer] = useState('')
@@ -200,13 +203,17 @@ function App() {
     e.preventDefault()
     setError('')
     setLoading(true)
+    console.log('DEBUG: handleLogin called - email:', email)
     try {
+      console.log('DEBUG: handleLogin - sending request to API')
       const response = await api.post('/api/auth/login', { email, password })
+      console.log('DEBUG: handleLogin - API response:', response.data)
       const { token: newToken, user } = response.data
       localStorage.setItem('token', newToken)
       localStorage.setItem('currentUser', JSON.stringify(user))
       setToken(newToken)
       setCurrentUser(user)
+      console.log('DEBUG: handleLogin - token and user set')
     } catch (err) {
       const errorMsg = err.response?.data?.error
       if (errorMsg === 'User is disabled') {
