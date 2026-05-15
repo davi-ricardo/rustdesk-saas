@@ -560,21 +560,8 @@ function App() {
                 </thead>
                 <tbody>
                   {reports.map(log => {
-                    let formattedDate = '-';
-                    if (log.timestamp) {
-                      // Primeiro, converte o timestamp para Date usando o timezone do navegador
-                      const date = new Date(log.timestamp);
-                      // Agora, formata explicitamente para o timezone America/Cuiaba
-                      formattedDate = date.toLocaleString('pt-BR', {
-                        timeZone: 'America/Cuiaba',
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit'
-                      });
-                    }
+                    let formattedDate = log.timestamp || '-';
+
 
                     // Formata o tempo de duração
                     let formattedDuration = '-';
