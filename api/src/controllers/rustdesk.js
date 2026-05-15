@@ -121,9 +121,8 @@ exports.logConnection = async (req, res) => {
   // Se tem o campo "peer" (array), usa body.id e peer[0] como os dois IDs
   let final_from, final_to;
   if (body.peer && Array.isArray(body.peer) && body.peer.length >= 1) {
-    // INVERTE! O RustDesk está invertendo quem é quem!
-    final_from = body.peer[0];
-    final_to = body.id;
+    final_from = body.id;
+    final_to = body.peer[0];
     console.log("[LOG-DETALHADO] Body tem peer array! final_from =", final_from, "final_to =", final_to);
   } else {
     // Tenta encontrar o dispositivo de origem (técnico)
@@ -249,12 +248,17 @@ exports.logConnection = async (req, res) => {
       // Se encontrou o log de start
       if (startLog) {
         console.log("[LOG] Log de start encontrado:", startLog);
+        console.log("[LOG-DEBUG] Horário atual do servidor (new Date()):", new Date());
+        console.log("[LOG-DEBUG] Horário do start log (startLog.timestamp):", new Date(startLog.timestamp));
         // SEMPRE usa os from e to do log de start, independentemente do que veio no close!
         save_from = startLog.from_device_id;
         save_to = startLog.to_device_id;
         // Calcula a duração usando o timestamp diretamente do banco!
         const startDate = new Date(startLog.timestamp);
         const endDate = new Date();
+        console.log("[LOG-DEBUG] startDate:", startDate);
+        console.log("[LOG-DEBUG] endDate:", endDate);
+        console.log("[LOG-DEBUG] Diferença em ms:", (endDate - startDate));
         calculatedDuration = Math.floor((endDate - startDate) / 1000);
         // Garante que a duração não é negativa!
         if (calculatedDuration < 0) {
