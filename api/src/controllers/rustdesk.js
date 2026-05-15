@@ -323,7 +323,7 @@ exports.getReports = async (req, res) => {
       LEFT JOIN devices fd ON cl.from_device_id = fd.device_id
       LEFT JOIN devices td ON cl.to_device_id = td.device_id
       LEFT JOIN service_categories sc ON cl.category_id = sc.id
-      ORDER BY cl.timestamp DESC
+      ORDER BY cl.id DESC
       LIMIT 100
     `);
     console.log("[LOG] getReports: Encontrados", result.rows.length, "logs");
