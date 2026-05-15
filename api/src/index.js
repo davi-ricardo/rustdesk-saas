@@ -182,6 +182,17 @@ const initDb = async () => {
       await db.query("ALTER TABLE connection_logs ADD COLUMN IF NOT EXISTS category_id INTEGER REFERENCES service_categories(id) ON DELETE SET NULL");
     } catch (e) {}
 
+    // Migração: Adiciona conn_id e session_id no connection_logs se não existirem
+    try {
+      await db.query("ALTER TABLE connection_logs ADD COLUMN IF NOT EXISTS conn_id TEXT");
+      await db.query("ALTER TABLE connection_logs ADD COLUMN IF NOT EXISTS session_id TEXT");
+      // Cria índices para melhorar a performance
+      await db.query("CREATE INDEX IF NOT EXISTS idx_connection_logs_conn_id ON connection_logs (conn_id)");
+      await db.query("CREATE INDEX IF NOT EXISTS idx_connection_logs_session_id ON connection_logs (session_id)");
+    } catch (e) {
+      console.log("Migração conn_id/session_id já aplicada ou erro:", e.message);
+    }
+
     console.log("Database tables ensured");
   } catch (err) {
     console.error("Error initializing database:", err);
