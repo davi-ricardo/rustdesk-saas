@@ -307,6 +307,7 @@ exports.logConnection = async (req, res) => {
 // Relatórios de Conexão - Listar
 exports.getReports = async (req, res) => {
   try {
+    console.log("[LOG] getReports: Buscando relatórios...");
     const result = await db.query(`
       SELECT cl.*, 
              f.alias as from_alias, 
@@ -325,6 +326,7 @@ exports.getReports = async (req, res) => {
       ORDER BY cl.timestamp DESC
       LIMIT 100
     `);
+    console.log("[LOG] getReports: Encontrados", result.rows.length, "logs");
     
     // Formata o retorno para usar alias, se existir, senão username@hostname, senão o ID RustDesk
     const formatted = result.rows.map(row => ({
