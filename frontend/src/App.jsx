@@ -9,18 +9,9 @@ function App() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [serverInfo, setServerInfo] = useState(null)
-  const [key, setKey] = useState(0)
 
   console.log('DEBUG: App initialized - token:', token ? 'present' : 'not present')
   console.log('DEBUG: App initialized - currentUser:', currentUser)
-  
-  useEffect(() => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('currentUser')
-    setToken(null)
-    setCurrentUser(null)
-    setKey(k => k + 1)
-  }, [])
   const [editingServerInfo, setEditingServerInfo] = useState(false)
   const [editIdServer, setEditIdServer] = useState('')
   const [editRelayServer, setEditRelayServer] = useState('')
@@ -93,6 +84,8 @@ function App() {
     try {
       const response = await api.get('/api/reports')
       console.log('[DEBUG] fetchReports: Resposta da API:', response.data)
+      console.log('[DEBUG] fetchReports: Total de logs:', response.data.length)
+      console.log('[DEBUG] fetchReports: Último log:', response.data[0])
       setReports(response.data)
     } catch (err) { console.error('Erro ao buscar relatórios') }
   }
@@ -352,7 +345,7 @@ function App() {
 
   if (token) {
     return (
-      <div key={key} style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'sans-serif' }}>
+      <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'sans-serif' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eee', paddingBottom: '10px' }}>
           <h1 style={{ color: '#333' }}>RemoteOps Panel</h1>
           <button onClick={handleLogout} style={{ padding: '8px 16px', cursor: 'pointer', borderRadius: '4px', border: '1px solid #ccc' }}>Sair</button>
