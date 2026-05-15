@@ -61,7 +61,7 @@ const initDb = async () => {
         password VARCHAR(255) NOT NULL,
         role VARCHAR(20) DEFAULT 'user',
         is_active BOOLEAN DEFAULT true,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
@@ -76,22 +76,22 @@ const initDb = async () => {
       CREATE TABLE IF NOT EXISTS app_settings (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
     await db.query(`
       CREATE TABLE IF NOT EXISTS hbbr_sessions (
         request_id VARCHAR(64) PRIMARY KEY,
-        started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        paired_at TIMESTAMP,
-        ended_at TIMESTAMP,
+        started_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        paired_at TIMESTAMPTZ,
+        ended_at TIMESTAMPTZ,
         a_ip VARCHAR(45),
         a_port INTEGER,
         b_ip VARCHAR(45),
         b_port INTEGER,
-        a_closed_at TIMESTAMP,
-        b_closed_at TIMESTAMP,
+        a_closed_at TIMESTAMPTZ,
+        b_closed_at TIMESTAMPTZ,
         last_line TEXT
       );
     `);
@@ -123,7 +123,7 @@ const initDb = async () => {
         hostname VARCHAR(100),
         ip_address VARCHAR(45),
         os VARCHAR(50),
-        last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        last_seen TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
@@ -134,7 +134,7 @@ const initDb = async () => {
         device_id VARCHAR(50) UNIQUE NOT NULL,
         alias VARCHAR(100),
         tags VARCHAR(255),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
       );
     `);
@@ -145,7 +145,7 @@ const initDb = async () => {
         id SERIAL PRIMARY KEY,
         name VARCHAR(100) UNIQUE NOT NULL,
         description TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
@@ -160,7 +160,7 @@ const initDb = async () => {
         id SERIAL PRIMARY KEY,
         name VARCHAR(100) UNIQUE NOT NULL,
         description TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
@@ -171,7 +171,7 @@ const initDb = async () => {
         from_device_id VARCHAR(50),
         to_device_id VARCHAR(50),
         action VARCHAR(20), -- 'start', 'end'
-        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
         duration INTEGER, -- em segundos, opcional para o evento 'end'
         category_id INTEGER REFERENCES service_categories(id) ON DELETE SET NULL
       );

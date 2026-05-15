@@ -223,7 +223,7 @@ exports.logConnection = async (req, res) => {
       let startLog = null;
       if (conn_id) {
         const resultConn = await db.query(`
-          SELECT id, timestamp AT TIME ZONE 'UTC' as timestamp, from_device_id, to_device_id FROM connection_logs 
+          SELECT id, timestamp, from_device_id, to_device_id FROM connection_logs 
           WHERE conn_id = $1 
             AND (action = 'start' OR action = 'open')
           ORDER BY timestamp DESC 
@@ -235,7 +235,7 @@ exports.logConnection = async (req, res) => {
       }
       if (!startLog && session_id) {
         const resultSession = await db.query(`
-          SELECT id, timestamp AT TIME ZONE 'UTC' as timestamp, from_device_id, to_device_id FROM connection_logs 
+          SELECT id, timestamp, from_device_id, to_device_id FROM connection_logs 
           WHERE session_id = $1 
             AND (action = 'start' OR action = 'open')
           ORDER BY timestamp DESC 
