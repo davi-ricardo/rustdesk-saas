@@ -560,7 +560,11 @@ function App() {
                 </thead>
                 <tbody>
                   {reports.map(log => {
-                    let formattedDate = log.timestamp || '-';
+                    let formattedDate = '-';
+                    if (log.timestamp) {
+                      const date = new Date(log.timestamp);
+                      formattedDate = date.toLocaleString('pt-BR');
+                    }
 
 
                     // Formata o tempo de duração
@@ -594,15 +598,9 @@ function App() {
                         <td style={{ padding: '10px' }}>
                           <button 
                             onClick={() => { setEditingLog(log); setSelectedCategoryId(log.category_id || '') }}
-                            style={{ padding: '4px 8px', fontSize: '0.8em', cursor: 'pointer', marginRight: '5px' }}
-                          >
-                            Classificar
-                          </button>
-                          <button 
-                            onClick={() => handleSwapFromTo(log.id)}
                             style={{ padding: '4px 8px', fontSize: '0.8em', cursor: 'pointer' }}
                           >
-                            Inverter
+                            Classificar
                           </button>
                         </td>
                       </tr>

@@ -325,16 +325,6 @@ exports.getReports = async (req, res) => {
     // Formata o retorno para usar alias, se existir, senão username@hostname, senão o ID RustDesk
     const formatted = result.rows.map(row => ({
       ...row,
-      // Formata o timestamp diretamente no timezone America/Cuiaba
-      timestamp: new Date(row.timestamp).toLocaleString('pt-BR', { 
-        timeZone: 'America/Cuiaba',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      }),
       from_alias: row.from_alias || (row.from_username && row.from_hostname ? `${row.from_username}@${row.from_hostname}` : (row.from_device_id || 'Desconhecido')),
       to_alias: row.to_alias || (row.to_username && row.to_hostname ? `${row.to_username}@${row.to_hostname}` : (row.to_device_id || 'Desconhecido'))
     }));
