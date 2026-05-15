@@ -327,6 +327,7 @@ exports.getReports = async (req, res) => {
       LIMIT 100
     `);
     console.log("[LOG] getReports: Encontrados", result.rows.length, "logs");
+    console.log("[LOG] getReports: Primeiros 5 logs:", result.rows.slice(0, 5));
     
     // Formata o retorno para usar alias, se existir, senão username@hostname, senão o ID RustDesk
     const formatted = result.rows.map(row => ({
