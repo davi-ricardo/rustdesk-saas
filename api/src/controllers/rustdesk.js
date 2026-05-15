@@ -121,9 +121,8 @@ exports.logConnection = async (req, res) => {
   // Se tem o campo "peer" (array), usa body.id e peer[0] como os dois IDs
   let final_from, final_to;
   if (body.peer && Array.isArray(body.peer) && body.peer.length >= 1) {
-    // INVERTE! O RustDesk está invertendo quem é quem!
-    final_from = body.peer[0];
-    final_to = body.id;
+    final_from = body.id;
+    final_to = body.peer[0];
     console.log("[LOG-DETALHADO] Body tem peer array! final_from =", final_from, "final_to =", final_to);
   } else {
     // Tenta encontrar o dispositivo de origem (técnico)
