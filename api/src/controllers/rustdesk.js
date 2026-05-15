@@ -248,13 +248,9 @@ exports.logConnection = async (req, res) => {
       // Se encontrou o log de start
       if (startLog) {
         console.log("[LOG] Log de start encontrado:", startLog);
-        // Usa os from e to do log de start
-        if (!save_from) {
-          save_from = startLog.from_device_id;
-        }
-        if (!save_to) {
-          save_to = startLog.to_device_id;
-        }
+        // SEMPRE usa os from e to do log de start, independentemente do que veio no close!
+        save_from = startLog.from_device_id;
+        save_to = startLog.to_device_id;
         // Calcula a duração usando o timestamp_utc diretamente do banco!
         const startDate = new Date(startLog.timestamp_utc);
         const endDate = new Date();
