@@ -563,7 +563,15 @@ function App() {
                     let formattedDate = '-';
                     if (log.timestamp) {
                       const date = new Date(log.timestamp);
-                      formattedDate = date.toLocaleString('pt-BR');
+                      formattedDate = date.toLocaleString('pt-BR', { 
+                        timeZone: 'America/Cuiaba',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                      });
                     }
 
 
