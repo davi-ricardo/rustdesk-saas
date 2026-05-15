@@ -223,7 +223,7 @@ exports.logConnection = async (req, res) => {
       let startLog = null;
       if (conn_id) {
         const resultConn = await db.query(`
-          SELECT id, timestamp AT TIME ZONE 'UTC' as timestamp_utc, from_device_id, to_device_id FROM connection_logs 
+          SELECT id, timestamp, from_device_id, to_device_id FROM connection_logs 
           WHERE conn_id = $1 
             AND (action = 'start' OR action = 'open')
           ORDER BY timestamp DESC 
@@ -235,7 +235,7 @@ exports.logConnection = async (req, res) => {
       }
       if (!startLog && session_id) {
         const resultSession = await db.query(`
-          SELECT id, timestamp AT TIME ZONE 'UTC' as timestamp_utc, from_device_id, to_device_id FROM connection_logs 
+          SELECT id, timestamp, from_device_id, to_device_id FROM connection_logs 
           WHERE session_id = $1 
             AND (action = 'start' OR action = 'open')
           ORDER BY timestamp DESC 
@@ -252,8 +252,8 @@ exports.logConnection = async (req, res) => {
         // SEMPRE usa os from e to do log de start, independentemente do que veio no close!
         save_from = startLog.from_device_id;
         save_to = startLog.to_device_id;
-        // Calcula a duração usando o timestamp_utc diretamente do banco!
-        const startDate = new Date(startLog.timestamp_utc);
+        // Calcula a duração usando o timestamp diretamente do banco!
+        const startDate = new Date(startLog.timestamp);
         const endDate = new Date();
         calculatedDuration = Math.floor((endDate - startDate) / 1000);
         // Garante que a duração não é negativa!
