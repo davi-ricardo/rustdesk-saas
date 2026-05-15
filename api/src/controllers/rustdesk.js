@@ -115,11 +115,15 @@ exports.logConnection = async (req, res) => {
   // Captura MUITOS formatos possíveis que o RustDesk pode enviar
   const body = req.body;
   
+  // Log detalhado para entender o fluxo
+  console.log("[LOG-DETALHADO] Iniciando análise do body...");
+  
   // Se tem o campo "peer" (array), usa body.id e peer[0] como os dois IDs
   let final_from, final_to;
   if (body.peer && Array.isArray(body.peer) && body.peer.length >= 1) {
     final_from = body.id;
     final_to = body.peer[0];
+    console.log("[LOG-DETALHADO] Body tem peer array! final_from =", final_from, "final_to =", final_to);
   } else {
     // Tenta encontrar o dispositivo de origem (técnico)
     final_from = 
@@ -143,6 +147,7 @@ exports.logConnection = async (req, res) => {
       body.remote_id ||
       body.peer_id || // Talvez o peer_id seja o destino?
       body.id; // Ou o id seja o destino?
+    console.log("[LOG-DETALHADO] Body SEM peer array! final_from =", final_from, "final_to =", final_to);
   }
   
   // Tenta encontrar a ação
@@ -169,6 +174,7 @@ exports.logConnection = async (req, res) => {
   if (!final_action && body.type === 0) {
     final_action = 'start';
   }
+  console.log("[LOG-DETALHADO] final_action =", final_action);
   
   // Tenta encontrar a duração
   const final_duration = 
@@ -180,6 +186,7 @@ exports.logConnection = async (req, res) => {
   // Captura conn_id e session_id
   const conn_id = body.conn_id || null;
   const session_id = body.session_id || null;
+  console.log("[LOG-DETALHADO] conn_id =", conn_id, "session_id =", session_id);
 
   // Log para depuração
   console.log("[LOG] Log processado:", { 
