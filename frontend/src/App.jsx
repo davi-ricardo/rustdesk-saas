@@ -83,6 +83,7 @@ function App() {
   const fetchReports = async () => {
     try {
       const response = await api.get('/api/reports')
+      console.log('[DEBUG] fetchReports: Resposta da API:', response.data)
       setReports(response.data)
     } catch (err) { console.error('Erro ao buscar relatórios') }
   }
