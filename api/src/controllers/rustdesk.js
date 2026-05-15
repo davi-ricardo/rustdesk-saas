@@ -394,6 +394,22 @@ exports.updateLogCategory = async (req, res) => {
   }
 };
 
+exports.swapLogFromTo = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.query(`
+      UPDATE connection_logs 
+      SET from_device_id = to_device_id, 
+          to_device_id = from_device_id 
+      WHERE id = $1
+    `, [id]);
+    res.json({ status: "ok" });
+  } catch (err) {
+    console.error("Error swapping log from/to:", err);
+    res.status(500).json({ error: "Failed to swap log from/to" });
+  }
+};
+
 exports.exportXLS = async (req, res) => {
   try {
     const { month, year } = req.query;

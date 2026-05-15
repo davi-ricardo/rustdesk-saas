@@ -155,6 +155,13 @@ function App() {
     } catch (err) { alert('Erro ao salvar categoria do log') }
   }
 
+  const handleSwapFromTo = async (logId) => {
+    try {
+      await api.put(`/api/reports/${logId}/swap`)
+      fetchReports()
+    } catch (err) { alert('Erro ao inverter origem/destino') }
+  }
+
   const handleExportXLS = async () => {
     try {
       const response = await api.get(`/api/reports/export/xls?month=${exportMonth}&year=${exportYear}`, {
@@ -591,9 +598,15 @@ function App() {
                         <td style={{ padding: '10px' }}>
                           <button 
                             onClick={() => { setEditingLog(log); setSelectedCategoryId(log.category_id || '') }}
-                            style={{ padding: '4px 8px', fontSize: '0.8em', cursor: 'pointer' }}
+                            style={{ padding: '4px 8px', fontSize: '0.8em', cursor: 'pointer', marginRight: '5px' }}
                           >
                             Classificar
+                          </button>
+                          <button 
+                            onClick={() => handleSwapFromTo(log.id)}
+                            style={{ padding: '4px 8px', fontSize: '0.8em', cursor: 'pointer' }}
+                          >
+                            Inverter
                           </button>
                         </td>
                       </tr>

@@ -13,6 +13,7 @@ router.get("/devices", authMiddleware, rustdeskController.getDevices);
 router.post("/alias", authMiddleware, rustdeskController.saveAlias);
 router.get("/reports", authMiddleware, rustdeskController.getReports);
 router.put("/reports/:id/category", authMiddleware, rustdeskController.updateLogCategory);
+router.put("/reports/:id/swap", authMiddleware, rustdeskController.swapLogFromTo);
 router.get("/reports/export/xls", authMiddleware, rustdeskController.exportXLS);
 router.post("/ingest/hbbr", rustdeskController.ingestHbbrLogs);
 
